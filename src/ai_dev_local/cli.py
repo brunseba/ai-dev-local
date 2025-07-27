@@ -33,7 +33,7 @@ def start(ollama, build):
         click.echo("  • Dashboard: http://localhost:3002")
         click.echo("  • Langfuse: http://localhost:3000")
         click.echo("  • FlowiseAI: http://localhost:3001")
-        click.echo("  • Open WebUI: http://localhost:8080")
+        click.echo("  • Open WebUI: http://localhost:8081")
         click.echo("  • LiteLLM Proxy: http://localhost:4000")
         click.echo("  • Documentation: http://localhost:8000")
         if ollama:
