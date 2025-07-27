@@ -65,34 +65,53 @@ services:
     ports:
       - "3001:3000"
     environment:
+      # Basic Configuration
+      PORT: 3000
+      
+      # Database Configuration
       DATABASE_TYPE: postgres
       DATABASE_HOST: postgres
       DATABASE_PORT: 5432
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
       DATABASE_NAME: flowise
-      FLOWISE_USERNAME: ${FLOWISE_USERNAME:-admin}
-      FLOWISE_PASSWORD: ${FLOWISE_PASSWORD:-admin123}
+      
+      # Storage Configuration
+      SECRETKEY_PATH: /root/.flowise
+      LOG_PATH: /root/.flowise/logs
+      BLOB_STORAGE_PATH: /root/.flowise/storage
+      
+      # Logging
       DEBUG: ${DEBUG:-false}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      
+      # Tool Function Dependencies
       TOOL_FUNCTION_BUILTIN_DEP: ${TOOL_FUNCTION_BUILTIN_DEP:-crypto,fs}
       TOOL_FUNCTION_EXTERNAL_DEP: ${TOOL_FUNCTION_EXTERNAL_DEP:-moment,lodash}
+      
+      # Settings
+      CORS_ORIGINS: "*"
+      IFRAME_ORIGINS: "*"
+      SHOW_COMMUNITY_NODES: true
+      DISABLE_FLOWISE_TELEMETRY: ${DISABLE_FLOWISE_TELEMETRY:-false}
+      
+      # JWT Auth Configuration
+      JWT_AUTH_TOKEN_SECRET: ${JWT_AUTH_TOKEN_SECRET:-AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD}
+      JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_TOKEN_SECRET:-AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD}
+      JWT_ISSUER: ${JWT_ISSUER:-AI-Dev-Local}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-AI-Dev-Local}
+      JWT_TOKEN_EXPIRY_IN_MINUTES: ${JWT_TOKEN_EXPIRY_IN_MINUTES:-360}
+      JWT_REFRESH_TOKEN_EXPIRY_IN_MINUTES: ${JWT_REFRESH_TOKEN_EXPIRY_IN_MINUTES:-43200}
+      
     volumes:
       - flowise_data:/root/.flowise
-    command: [
-      "--DATABASE_TYPE=postgres",
-      "--DATABASE_HOST=postgres",
-      "--DATABASE_PORT=5432",
-      "--DATABASE_USER=postgres",
-      "--DATABASE_PASSWORD=postgres",
-      "--DATABASE_NAME=flowise",
-      "--PORT=3000"
-    ]
+    entrypoint: /bin/sh -c "sleep 3; flowise start"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/ping"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
   # Open WebUI - Chat interface for LLMs
   open-webui:
