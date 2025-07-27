@@ -114,11 +114,43 @@ Access the unified API proxy for LLMs.
 
 - LiteLLM: [API Proxy](http://localhost:4000/)
 
+## Step 5: Local AI Models (Optional)
+
+### Using Ollama for Local Models
+
+If you want to run AI models locally instead of using cloud APIs:
+
+```bash
+# Start services with Ollama
+ai-dev-local start --ollama
+
+# Browse available models
+ai-dev-local ollama list-available --category code
+
+# Install popular models
+ai-dev-local ollama pull codellama:7b
+ai-dev-local ollama pull llama2:7b
+
+# Sync models to LiteLLM for unified API access
+ai-dev-local ollama sync-litellm
+
+# Restart LiteLLM to apply changes
+docker-compose restart litellm
+```
+
+**Benefits of Local Models:**
+- Privacy: Your data stays local
+- Cost: No API usage charges
+- Speed: No network latency for inference
+- Offline: Works without internet connection
+
 ## Useful Commands
 
 - **Stop Services**: `ai-dev-local stop`
 - **View Logs**: `ai-dev-local logs`
 - **Update Configuration**: `ai-dev-local config set <KEY> <VALUE>`
+- **Check Ollama Models**: `ai-dev-local ollama models`
+- **Open Documentation**: `ai-dev-local docs`
 
 ## Next Steps
 

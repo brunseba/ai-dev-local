@@ -361,6 +361,48 @@ curl -H "Authorization: Bearer $LITELLM_MASTER_KEY" http://localhost:4000/v1/mod
 curl http://localhost:4000/metrics
 ```
 
+### CLI Integration for Ollama Management
+
+The AI Dev Local CLI provides seamless integration for managing Ollama models with LiteLLM:
+
+```bash
+# Browse available Ollama models
+ai-dev-local ollama list-available
+ai-dev-local ollama list-available --category code
+ai-dev-local ollama list-available --search llama
+
+# Pull and install Ollama models
+ai-dev-local ollama pull llama2:7b
+ai-dev-local ollama pull codellama:7b
+
+# Sync installed Ollama models to LiteLLM configuration
+ai-dev-local ollama sync-litellm
+
+# Preview changes before applying
+ai-dev-local ollama sync-litellm --dry-run
+
+# Restart LiteLLM to apply new configuration
+docker-compose restart litellm
+```
+
+**Automatic Configuration Management:**
+- Detects all installed Ollama models automatically
+- Updates `litellm_config.yaml` with current Ollama models
+- Removes outdated Ollama model entries
+- Preserves all non-Ollama model configurations
+- Updates router group aliases for proper load balancing
+- Creates timestamped backups before making changes
+
+**Typical Workflow:**
+1. Start services with Ollama: `ai-dev-local start --ollama`
+2. Browse available models: `ai-dev-local ollama list-available --category code`
+3. Install desired models: `ai-dev-local ollama pull codellama:7b`
+4. Sync to LiteLLM: `ai-dev-local ollama sync-litellm`
+5. Restart LiteLLM: `docker-compose restart litellm`
+6. Verify in health check: Models should appear as healthy endpoints
+
+See the [CLI Reference](../cli-reference.md#ollama-management) for complete documentation of all Ollama management commands.
+
 ## Online Resources
 
 - **GitHub Repository:** [LiteLLM GitHub](https://github.com/BerriAI/litellm)

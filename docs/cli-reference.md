@@ -266,6 +266,79 @@ ai-dev-local ollama remove llama2:7b
 ai-dev-local ollama remove codellama:7b
 ```
 
+#### `ai-dev-local ollama list-available [OPTIONS]`
+
+List all available models from Ollama library.
+
+```bash
+# Show popular models (default)
+ai-dev-local ollama list-available
+
+# Search for specific models
+ai-dev-local ollama list-available --search llama
+ai-dev-local ollama list-available --search code
+
+# Filter by category
+ai-dev-local ollama list-available --category code
+ai-dev-local ollama list-available --category embedding
+ai-dev-local ollama list-available --category vision
+ai-dev-local ollama list-available --category all
+
+# Different output formats
+ai-dev-local ollama list-available --format table  # default
+ai-dev-local ollama list-available --format list
+ai-dev-local ollama list-available --format json
+```
+
+**Options:**
+- `--search, -s TEXT`: Search for models containing this term
+- `--category, -c [all|popular|code|embedding|vision]`: Filter by model category (default: popular)
+- `--format, -f [table|list|json]`: Output format (default: table)
+
+**Categories:**
+- **popular**: llama2, llama3, codellama, mistral, phi, gemma, qwen
+- **code**: codellama, codegemma, starcoder, wizard-coder, deepseek-coder
+- **embedding**: nomic-embed, mxbai-embed, all-minilm
+- **vision**: llava, moondream, bakllava
+
+**Features:**
+- Fetches real-time data from Ollama library registry
+- Shows model names, tags, pull counts, and descriptions
+- Fallback list of popular models if registry is unavailable
+- Sorted by popularity (download count)
+
+#### `ai-dev-local ollama sync-litellm [OPTIONS]`
+
+Sync LiteLLM configuration with currently available Ollama models.
+
+```bash
+# Sync Ollama models to LiteLLM config
+ai-dev-local ollama sync-litellm
+
+# Preview changes without applying them
+ai-dev-local ollama sync-litellm --dry-run
+
+# Sync without creating backup
+ai-dev-local ollama sync-litellm --no-backup
+```
+
+**Options:**
+- `--dry-run`: Show what would be changed without making modifications
+- `--backup / --no-backup`: Create backup of existing config (default: backup enabled)
+
+**Prerequisites:**
+- Ollama service must be running (`ai-dev-local start --ollama`)
+- Ollama models must be installed (`ai-dev-local ollama init` or `ai-dev-local ollama pull <model>`)
+
+**Features:**
+- Automatically detects all installed Ollama models
+- Updates LiteLLM configuration with current models
+- Removes outdated Ollama model entries
+- Creates timestamped backup before changes
+- Updates router group aliases for model routing
+- Preserves all non-Ollama model configurations
+- Provides detailed change summary before applying
+
 ## Service URLs
 
 When services are running, they are accessible at these default URLs:
@@ -354,14 +427,24 @@ ai-dev-local dashboard
 # Start with Ollama
 ai-dev-local start --ollama
 
+# Browse available models
+ai-dev-local ollama list-available
+ai-dev-local ollama list-available --category code
+
 # Initialize with models
 ai-dev-local ollama init
 
-# List available models
+# List installed models
 ai-dev-local ollama models
 
 # Add more models
 ai-dev-local ollama pull llama2:13b
+
+# Sync Ollama models to LiteLLM for unified API access
+ai-dev-local ollama sync-litellm
+
+# Restart LiteLLM to apply changes
+docker-compose restart litellm
 ```
 
 ### Configuration Management

@@ -46,10 +46,24 @@ uv sync --extra dev
    ```
 
 3. **Access web interfaces**:
+   - Dashboard: http://localhost:3002
    - Langfuse: http://localhost:3000
    - FlowiseAI: http://localhost:3001
-   - Open WebUI: http://localhost:8080
+   - Open WebUI: http://localhost:8081
    - LiteLLM Proxy: http://localhost:4000
+
+4. **Manage local AI models** (optional):
+   ```bash
+   # Start with local Ollama server
+   ai-dev-local start --ollama
+   
+   # Browse and install AI models
+   ai-dev-local ollama list-available --category code
+   ai-dev-local ollama pull codellama:7b
+   
+   # Sync models to unified API
+   ai-dev-local ollama sync-litellm
+   ```
 
 ### Option 2: IDE MCP Integration (Recommended for Development)
 
