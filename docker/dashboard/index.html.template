@@ -16,6 +16,12 @@
         .btn { display: block; text-align: center; background: #0066cc; color: white; padding: 10px 0; border-radius: 5px; text-decoration: none; }
         .version-info { margin-top: 10px; font-size: 0.9em; opacity: 0.8; }
         .footer { text-align: center; margin-top: 30px; padding: 20px; color: #666; font-size: 0.8em; }
+        .ollama-models { margin-top: 10px; }
+        .ollama-models ul { list-style: none; padding: 0; margin: 5px 0; }
+        .ollama-models li { background: #f8f9fa; margin: 2px 0; padding: 5px 8px; border-radius: 3px; font-size: 0.85em; border-left: 3px solid #0066cc; }
+        .loading { color: #666; font-style: italic; font-size: 0.9em; }
+        .error { color: #dc3545; font-size: 0.9em; }
+        .model-count { background: #0066cc; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.8em; margin-left: 5px; }
     </style>
 </head>
 
@@ -69,9 +75,13 @@
         </div>
         <div class="service">
             <div class="card">
-                <div class="card-title">Ollama</div>
+                <div class="card-title">Ollama <span id="model-count" class="model-count" style="display: none;"></span></div>
                 <div class="card-content">
                     <p>Local LLM server.</p>
+                    <div class="ollama-models">
+                        <div id="ollama-status" class="loading">Loading models...</div>
+                        <ul id="ollama-model-list" style="display: none;"></ul>
+                    </div>
                     <a href="${OLLAMA_URL}" class="btn">Open Ollama</a>
                 </div>
             </div>
@@ -86,6 +96,103 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Server-side fetched models data
+        const SERVER_OLLAMA_MODELS = '${OLLAMA_MODELS_JSON}';
+        const SERVER_MODEL_COUNT = '${OLLAMA_MODEL_COUNT}';
+        
+        // Function to display Ollama models
+        function displayOllamaModels(data, isServerData = false) {
+            const statusEl = document.getElementById('ollama-status');
+            const modelListEl = document.getElementById('ollama-model-list');
+            const modelCountEl = document.getElementById('model-count');
+            
+            try {
+                if (data && data.models && data.models.length > 0) {
+                    // Clear loading message
+                    statusEl.style.display = 'none';
+                    
+                    // Show model count in title
+                    modelCountEl.textContent = data.models.length;
+                    modelCountEl.style.display = 'inline';
+                    
+                    // Clear and populate model list
+                    modelListEl.innerHTML = '';
+                    data.models.forEach(model => {
+                        const li = document.createElement('li');
+                        const modelName = model.name || 'Unknown';
+                        const modelSize = model.size ? formatBytes(model.size) : '';
+                        const sizeText = modelSize ? ` (${modelSize})` : '';
+                        li.textContent = `${modelName}${sizeText}`;
+                        modelListEl.appendChild(li);
+                    });
+                    
+                    // Show the model list
+                    modelListEl.style.display = 'block';
+                } else {
+                    statusEl.textContent = isServerData ? 'No models installed' : 'Ollama not available';
+                    statusEl.className = 'error';
+                }
+            } catch (error) {
+                console.error('Failed to display Ollama models:', error);
+                statusEl.textContent = 'Error displaying models';
+                statusEl.className = 'error';
+            }
+        }
+        
+        // Function to fetch Ollama models from API (fallback)
+        async function fetchOllamaModels() {
+            const statusEl = document.getElementById('ollama-status');
+            
+            try {
+                // Try to fetch models from Ollama API
+                const response = await fetch('${OLLAMA_URL}/api/tags');
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                displayOllamaModels(data, false);
+                
+            } catch (error) {
+                console.error('Failed to fetch Ollama models:', error);
+                statusEl.textContent = 'Ollama not available';
+                statusEl.className = 'error';
+            }
+        }
+        
+        // Helper function to format bytes
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+        
+        // Initialize models display when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // First try to use server-side data
+            if (SERVER_OLLAMA_MODELS && SERVER_OLLAMA_MODELS !== '[]' && SERVER_MODEL_COUNT !== '0') {
+                try {
+                    const serverData = JSON.parse(SERVER_OLLAMA_MODELS);
+                    displayOllamaModels(serverData, true);
+                } catch (e) {
+                    console.error('Failed to parse server-side Ollama data:', e);
+                    // Fallback to client-side fetching
+                    fetchOllamaModels();
+                }
+            } else {
+                // If no server-side data, try client-side fetching
+                fetchOllamaModels();
+            }
+            
+            // Refresh models every 60 seconds using client-side fetching
+            setInterval(fetchOllamaModels, 60000);
+        });
+    </script>
 
 </body>
 

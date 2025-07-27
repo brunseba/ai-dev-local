@@ -11,7 +11,13 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=postgres"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -24,7 +30,13 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=redis"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -39,18 +51,24 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "3000:3000"
+      - "${LANGFUSE_PORT:-3000}:3000"
     environment:
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/langfuse
       NEXTAUTH_SECRET: mysecret
       SALT: mysalt
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: http://${HOST:-localhost}:${LANGFUSE_PORT:-3000}
       TELEMETRY_ENABLED: ${TELEMETRY_ENABLED:-true}
       LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: ${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-false}
     volumes:
       - langfuse_data:/app/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=langfuse"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/public/health"]
+      test: ["CMD-SHELL", "pgrep -f next-server"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -63,7 +81,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "3001:3000"
+      - "${FLOWISE_PORT:-3001}:3000"
     environment:
       # Basic Configuration
       PORT: 3000
@@ -95,19 +113,57 @@ services:
       SHOW_COMMUNITY_NODES: true
       DISABLE_FLOWISE_TELEMETRY: ${DISABLE_FLOWISE_TELEMETRY:-false}
       
-      # JWT Auth Configuration
+      # JWT Auth Configuration (v3.0.1+ Authentication System)
       JWT_AUTH_TOKEN_SECRET: ${JWT_AUTH_TOKEN_SECRET:-AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD}
-      JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_TOKEN_SECRET:-AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD}
+      JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_TOKEN_SECRET:-AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD}
       JWT_ISSUER: ${JWT_ISSUER:-AI-Dev-Local}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-AI-Dev-Local}
-      JWT_TOKEN_EXPIRY_IN_MINUTES: ${JWT_TOKEN_EXPIRY_IN_MINUTES:-360}
-      JWT_REFRESH_TOKEN_EXPIRY_IN_MINUTES: ${JWT_REFRESH_TOKEN_EXPIRY_IN_MINUTES:-43200}
+      JWT_TOKEN_EXPIRY_IN_MINUTES: ${JWT_TOKEN_EXPIRY_IN_MINUTES:-60}
+      JWT_REFRESH_TOKEN_EXPIRY_IN_MINUTES: ${JWT_REFRESH_TOKEN_EXPIRY_IN_MINUTES:-129600}
+      EXPRESS_SESSION_SECRET: ${EXPRESS_SESSION_SECRET:-flowise-ai-dev-local}
+      EXPIRE_AUTH_TOKENS_ON_RESTART: ${EXPIRE_AUTH_TOKENS_ON_RESTART:-false}
+      
+      # Application Configuration
+      APP_URL: ${APP_URL:-http://${HOST:-localhost}:${FLOWISE_PORT:-3001}}
+      
+      # Legacy Username/Password (Required for initial admin account setup)
+      FLOWISE_USERNAME: ${FLOWISE_USERNAME:-admin}
+      FLOWISE_PASSWORD: ${FLOWISE_PASSWORD:-admin123}
+      
+      # Database Override
+      OVERRIDE_DATABASE: ${OVERRIDE_DATABASE:-true}
+      FLOWISE_SECRETKEY_OVERWRITE: ${FLOWISE_SECRETKEY_OVERWRITE:-mySecretKey123}
+      
+      # Security Configuration
+      PASSWORD_RESET_TOKEN_EXPIRY_IN_MINS: ${PASSWORD_RESET_TOKEN_EXPIRY_IN_MINS:-15}
+      PASSWORD_SALT_HASH_ROUNDS: ${PASSWORD_SALT_HASH_ROUNDS:-12}
+      TOKEN_HASH_SECRET: ${TOKEN_HASH_SECRET:-ai-dev-local-token-hash-secret-key}
+      
+      # API Configuration
+      APIKEY_PATH: ${APIKEY_PATH:-/root/.flowise}
+      EXECUTION_MODE: ${EXECUTION_MODE:-main}
+      
+      # Security and Access Control
+      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
+      NUMBER_OF_PROXIES: ${NUMBER_OF_PROXIES:-1}
+      
+      # Performance Configuration
+      CHATFLOW_WORKER_TIMEOUT: ${CHATFLOW_WORKER_TIMEOUT:-30000}
+      DEPLOY_TIMEOUT: ${DEPLOY_TIMEOUT:-120000}
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-50mb}
       
     volumes:
       - flowise_data:/root/.flowise
-    entrypoint: /bin/sh -c "sleep 3; flowise start"
+      - ./configs/flowise:/root/.flowise/config:ro  # Read-only config mount
+    entrypoint: /bin/sh -c "sleep 3; node /root/.flowise/config/init.js || true; flowise start"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=flowise"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/ping"]
+      test: ["CMD-SHELL", "pgrep -f flowise"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -118,7 +174,7 @@ services:
     image: ghcr.io/open-webui/open-webui:main
     restart: unless-stopped
     ports:
-      - "8081:8080"
+      - "${OPENWEBUI_PORT:-8081}:8080"
     environment:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
       OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-http://litellm:4000/v1}
@@ -132,6 +188,12 @@ services:
       WEBUI_NAME: ${WEBUI_NAME:-AI Dev Local}
     volumes:
       - open_webui_data:/app/backend/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=open-webui"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
       interval: 30s
@@ -148,7 +210,7 @@ services:
       redis:
         condition: service_healthy
     ports:
-      - "4000:4000"
+      - "${LITELLM_PORT:-4000}:4000"
     environment:
       # Core LiteLLM Settings
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-*******************}
@@ -181,8 +243,14 @@ services:
       - ./configs/litellm_config.yaml:/app/config.yaml
       - litellm_data:/app/data
     command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=litellm"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      test: ["CMD-SHELL", "pgrep -f litellm"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -193,22 +261,30 @@ services:
     image: ollama/ollama:latest
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      - "${OLLAMA_PORT:-11434}:11434"
     environment:
-      OLLAMA_ORIGINS: "*"
-      OLLAMA_HOST: "0.0.0.0:11434"
+      OLLAMA_ORIGINS: ${OLLAMA_ORIGINS:-*}
+      OLLAMA_HOST: ${OLLAMA_HOST:-0.0.0.0:11434}
       OLLAMA_MODELS: ${OLLAMA_MODELS:-/root/.ollama/models}
+      # GPU settings - set OLLAMA_GPU=true in .env if you have NVIDIA GPU
+      OLLAMA_GPU: ${OLLAMA_GPU:-false}
     volumes:
       - ollama_data:/root/.ollama
       - ./scripts/ollama-init.sh:/ollama-init.sh
     profiles:
       - ollama
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=ollama"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
       interval: 30s
       timeout: 10s
       retries: 3
-    # Uncomment the following lines if you have NVIDIA GPU support
+    # GPU support - uncomment if OLLAMA_GPU=true in .env
     # deploy:
     #   resources:
     #     reservations:
@@ -227,18 +303,24 @@ services:
         BUILD_DATE: ${BUILD_DATE:-unknown}
     restart: unless-stopped
     ports:
-      - "3002:80"
+      - "${DASHBOARD_PORT:-3002}:80"
     environment:
-      LANGFUSE_URL: http://localhost:3000
-      FLOWISE_URL: http://localhost:3001
-      OPENWEBUI_URL: http://localhost:8081
-      LITELLM_URL: http://localhost:4000
-      OLLAMA_URL: http://localhost:11434
+      LANGFUSE_URL: http://${HOST:-localhost}:${LANGFUSE_PORT:-3000}
+      FLOWISE_URL: http://${HOST:-localhost}:${FLOWISE_PORT:-3001}
+      OPENWEBUI_URL: http://${HOST:-localhost}:${OPENWEBUI_PORT:-8081}
+      LITELLM_URL: http://${HOST:-localhost}:${LITELLM_PORT:-4000}
+      OLLAMA_URL: http://${HOST:-localhost}:${OLLAMA_PORT:-11434}
       DASHBOARD_TITLE: ${DASHBOARD_TITLE:-AI Dev Local Dashboard}
-      APP_VERSION: ${GIT_TAG:-v0.2.0}
+      APP_VERSION: ${GIT_TAG:-v0.2.1}
       BUILD_DATE: ${BUILD_DATE:-unknown}
     volumes:
       - ./.git:/app/.git:ro  # Mount git directory for version detection
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=dashboard"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
@@ -254,11 +336,17 @@ services:
     volumes:
       - .:/docs
     ports:
-      - "8000:8000"
+      - "${MKDOCS_PORT:-8000}:8000"
     working_dir: /docs
     command: serve --dev-addr=0.0.0.0:8000
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mkdocs"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      test: ["CMD-SHELL", "pgrep -f mkdocs"]
       interval: 30s
       timeout: 10s
       retries: 3
