@@ -1,19 +1,37 @@
 # Langfuse Service
 
-Langfuse offers observability for LLM interactions. It helps track usage, analyze performance, and debug AI workflows.
+Langfuse provides comprehensive observability for large language models (LLMs). It enables you to track usage, analyze performance metrics, and debug workflow issues within AI-driven applications.
+
+## Architecture Diagram
+
+```mermaid
+graph TD;
+    A[User Interaction] -->|Requests| B[API Gateway];
+    B -->|Forward| C[Langfuse Service];
+    C -->|Metrics| D[Analytics Dashboard];
+    C -->|Logs| E[Log Storage];
+    C -->|Alerts| F[Alert System];
+```
 
 ## Features
 
-- LLM usage tracking
-- Performance analysis
-- Workflow debugging
+- Real-time LLM usage tracking
+- Comprehensive performance analysis
+- AI workflow debugging
+- Query and event logging
+- Custom alerts and notifications
 
 ## Access
 
-Langfuse dashboard is accessible at:
+The Langfuse dashboard is accessible at:
 
 ```
 http://localhost:3000/
 ```
 
-For more details on using Langfuse, refer to the official documentation or contact support.
+## Online Resources
+
+- **GitHub Repository:** [Langfuse GitHub](https://github.com/langfuse/langfuse)
+- **Web Documentation:** [Langfuse Docs](https://docs.langfuse.io)
+
+Langfuse is ideal for teams needing detailed insights into LLM usage patterns and operational metrics.
