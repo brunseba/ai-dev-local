@@ -14,6 +14,26 @@ def start(ollama, build):
     """Start all AI Dev Local services."""
     click.echo("🚀 Starting AI Dev Local services...")
     
+    # Get git version for dashboard
+    import os
+    try:
+        git_tag = subprocess.run(['git', 'describe', '--tags', '--always'], 
+                                capture_output=True, text=True, check=True).stdout.strip()
+    except subprocess.CalledProcessError:
+        git_tag = 'v0.2.0'
+    
+    # Get build date
+    import datetime
+    build_date = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    
+    # Set environment variables
+    env = os.environ.copy()
+    env['GIT_TAG'] = git_tag
+    env['BUILD_DATE'] = build_date
+    
+    click.echo(f"📋 Version: {git_tag}")
+    click.echo(f"📅 Build Date: {build_date}")
+    
     cmd = ['docker-compose']
     
     if ollama:
@@ -27,7 +47,7 @@ def start(ollama, build):
     cmd.extend(['-d'])
     
     try:
-        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        result = subprocess.run(cmd, env=env, check=True, capture_output=True, text=True)
         click.echo("✅ Services started successfully!")
         click.echo("\n📋 Service URLs:")
         click.echo("  • Dashboard: http://localhost:3002")
@@ -100,6 +120,27 @@ def dashboard():
     
     click.echo("🎛️ Opening dashboard...")
     webbrowser.open('http://localhost:3002')
+
+@cli.command()
+def version():
+    """Display current version from git tag."""
+    try:
+        # Try to get version from git tag
+        result = subprocess.run(['git', 'describe', '--tags', '--exact-match'], 
+                              capture_output=True, text=True, check=True)
+        version = result.stdout.strip()
+        click.echo(f"🏷️  Current Version: {version}")
+    except subprocess.CalledProcessError:
+        try:
+            # Fallback to latest tag with commit info
+            result = subprocess.run(['git', 'describe', '--tags', '--always'], 
+                                  capture_output=True, text=True, check=True)
+            version = result.stdout.strip()
+            click.echo(f"🏷️  Current Version: {version} (development)")
+        except subprocess.CalledProcessError:
+            # Final fallback to __init__.py version
+            from ai_dev_local import __version__
+            click.echo(f"🏷️  Current Version: {__version__} (no git tags found)")
 
 if __name__ == '__main__':
     cli()

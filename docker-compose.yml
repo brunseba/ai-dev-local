@@ -222,6 +222,9 @@ services:
     build:
       context: ./docker/dashboard
       dockerfile: Dockerfile
+      args:
+        GIT_TAG: ${GIT_TAG:-unknown}
+        BUILD_DATE: ${BUILD_DATE:-unknown}
     restart: unless-stopped
     ports:
       - "3002:80"
@@ -232,6 +235,10 @@ services:
       LITELLM_URL: http://localhost:4000
       OLLAMA_URL: http://localhost:11434
       DASHBOARD_TITLE: ${DASHBOARD_TITLE:-AI Dev Local Dashboard}
+      APP_VERSION: ${GIT_TAG:-v0.2.0}
+      BUILD_DATE: ${BUILD_DATE:-unknown}
+    volumes:
+      - ./.git:/app/.git:ro  # Mount git directory for version detection
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost/health"]
       interval: 30s
