@@ -107,6 +107,10 @@ Ready to dive in? Choose your setup approach:
 - **[Quick Start Tutorial](getting-started/quick-start.md)** - Get up and running fast
 - **[IDE MCP Setup](IDE_MCP_SETUP.md)** - Direct IDE integration (recommended for development)
 
+### Configuration & Troubleshooting
+- **[Configuration Guide](CONFIGURATION.md)** - Complete configuration reference
+- **[LiteLLM Troubleshooting](CONFIGURATION.md#litellm-troubleshooting)** - Fix "Invalid HTTP request" warnings and API key issues
+
 ### MCP Integration Approaches
 1. **IDE-side Integration** - Run MCP servers on-demand within your editor
 2. **Docker Compose Stack** - Full containerized MCP server deployment

@@ -230,6 +230,89 @@ ai-dev-local config init
 2. **Port Conflicts**: Change conflicting ports in `.env`
 3. **Permission Issues**: Check file permissions on `.env`
 4. **Invalid Values**: Use `ai-dev-local config set` to fix
+5. **LiteLLM Warning Messages**: See [LiteLLM Troubleshooting](#litellm-troubleshooting) below
+
+### LiteLLM Troubleshooting
+
+If you see warning messages like `"Invalid HTTP request received."` in the LiteLLM logs, this is usually caused by API authentication issues during health checks.
+
+#### Symptoms
+- Log messages: `{"message": "Invalid HTTP request received.", "level": "WARNING"}`
+- LiteLLM reports "unhealthy_endpoints" in health checks
+- Models appear unavailable in the UI
+
+#### Common Causes
+1. **Placeholder API Keys**: Your `.env` file still contains example values
+2. **Invalid API Keys**: API keys are incorrect or expired
+3. **Missing API Keys**: Required keys are empty or not set
+
+#### Diagnosis
+Check LiteLLM health status:
+```bash
+# Check if LiteLLM is accessible
+curl -H "Authorization: Bearer $(grep LITELLM_MASTER_KEY .env | cut -d'=' -f2)" \
+     http://localhost:4000/health
+```
+
+This will show which endpoints are healthy/unhealthy and why.
+
+#### Solutions
+
+**1. Update Placeholder API Keys**
+Replace example values in your `.env` file:
+```bash
+# BAD - placeholder values
+OPENAI_API_KEY=*********************
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
+
+# GOOD - real API keys
+OPENAI_API_KEY=sk-proj-abc123...
+ANTHROPIC_API_KEY=sk-ant-api03-xyz789...
+GEMINI_API_KEY=AIzaSy123...
+```
+
+**2. Get Valid API Keys**
+- **OpenAI**: https://platform.openai.com/api-keys
+- **Anthropic**: https://console.anthropic.com/
+- **Google Gemini**: https://aistudio.google.com/app/apikey
+- **Cohere**: https://dashboard.cohere.ai/api-keys
+
+**3. Update and Restart Services**
+```bash
+# Update API keys
+ai-dev-local config set OPENAI_API_KEY sk-proj-your-real-key
+ai-dev-local config set ANTHROPIC_API_KEY sk-ant-your-real-key
+
+# Restart LiteLLM to pick up new keys
+docker-compose restart litellm
+
+# Verify health
+ai-dev-local status
+```
+
+**4. Disable Unused Providers**
+If you don't plan to use certain providers, you can comment them out in `configs/litellm_config.yaml`:
+```yaml
+model_list:
+  # OpenAI Models (keep these if you have OPENAI_API_KEY)
+  - model_name: gpt-4
+    litellm_params:
+      model: openai/gpt-4
+      api_key: os.environ/OPENAI_API_KEY
+  
+  # Comment out unused providers to avoid health check failures
+  # - model_name: claude-3-opus
+  #   litellm_params:
+  #     model: anthropic/claude-3-opus-20240229
+  #     api_key: os.environ/ANTHROPIC_API_KEY
+```
+
+#### Expected Behavior After Fix
+- No more "Invalid HTTP request received" warnings
+- Health check shows `"healthy_endpoints"` instead of empty array
+- Models become available in Open WebUI and other interfaces
+- LiteLLM proxy responds correctly to API requests
 
 ## Security Best Practices
 
