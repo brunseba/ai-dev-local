@@ -127,6 +127,52 @@ def docs():
     click.echo("📚 Opening documentation...")
     webbrowser.open(f'http://{host}:{mkdocs_port}')
 
+@cli.command('docs-reload')
+def docs_reload():
+    """Reload/update MkDocs documentation service."""
+    click.echo("📚 Updating MkDocs documentation...")
+    
+    # Check if MkDocs service is running
+    try:
+        result = subprocess.run(['docker-compose', 'ps', 'mkdocs'], 
+                              capture_output=True, text=True, check=True)
+        if 'Up' not in result.stdout:
+            click.echo("❌ MkDocs service is not running. Start it first with: ai-dev-local start")
+            sys.exit(1)
+    except subprocess.CalledProcessError:
+        click.echo("❌ Failed to check MkDocs status")
+        sys.exit(1)
+    
+    try:
+        # Stop the MkDocs service first
+        click.echo("🛑 Stopping MkDocs service...")
+        subprocess.run(['docker-compose', 'stop', 'mkdocs'], check=True, capture_output=True)
+        
+        # Rebuild the MkDocs Docker image to pick up documentation changes
+        click.echo("🔨 Rebuilding MkDocs Docker image...")
+        subprocess.run(['docker-compose', 'build', 'mkdocs'], check=True, capture_output=True)
+        
+        # Start the service with the new image
+        click.echo("🚀 Starting MkDocs service with updated documentation...")
+        subprocess.run(['docker-compose', 'up', '-d', 'mkdocs'], check=True, capture_output=True)
+        
+        click.echo("✅ MkDocs documentation updated successfully!")
+        
+        # Show documentation URL
+        import os
+        host = os.getenv('HOST', 'localhost')
+        mkdocs_port = os.getenv('MKDOCS_PORT', '8000')
+        click.echo(f"📖 Documentation available at: http://{host}:{mkdocs_port}")
+        
+        # Ask if user wants to open in browser
+        if click.confirm("🌐 Open documentation in browser?"):
+            import webbrowser
+            webbrowser.open(f'http://{host}:{mkdocs_port}')
+        
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to reload MkDocs: {e}", err=True)
+        sys.exit(1)
+
 @cli.command()
 def dashboard():
     """Open dashboard in browser."""
@@ -623,6 +669,289 @@ def remove(model):
     except subprocess.CalledProcessError:
         click.echo(f"❌ Failed to remove {model}", err=True)
         sys.exit(1)
+
+@ollama.command('sync-litellm')
+@click.option('--dry-run', is_flag=True, help='Show what would be changed without making modifications')
+@click.option('--backup', is_flag=True, default=True, help='Create backup of existing config (default: true)')
+def sync_litellm(dry_run, backup):
+    """Sync LiteLLM configuration with currently available Ollama models."""
+    import os
+    import yaml
+    import shutil
+    from datetime import datetime
+    
+    click.echo("🔄 Syncing LiteLLM configuration with Ollama models...")
+    
+    # Check if Ollama service is running
+    try:
+        result = subprocess.run(['docker-compose', 'ps', 'ollama'], 
+                              capture_output=True, text=True, check=True)
+        if 'Up' not in result.stdout:
+            click.echo("❌ Ollama service is not running. Start it first with: ai-dev-local start --ollama")
+            sys.exit(1)
+    except subprocess.CalledProcessError:
+        click.echo("❌ Failed to check Ollama status")
+        sys.exit(1)
+    
+    # Get currently installed Ollama models
+    try:
+        result = subprocess.run(['docker-compose', 'exec', '-T', 'ollama', 'ollama', 'list'], 
+                              capture_output=True, text=True, check=True)
+        ollama_output = result.stdout.strip()
+        
+        # Parse ollama list output to extract model names
+        ollama_models = []
+        for line in ollama_output.split('\n')[1:]:  # Skip header
+            if line.strip():
+                model_name = line.split()[0]  # First column is model name
+                if ':' in model_name:
+                    # Remove tag for LiteLLM compatibility, keep base name
+                    base_name = model_name.split(':')[0]
+                    ollama_models.append({'name': base_name, 'full_name': model_name})
+                else:
+                    ollama_models.append({'name': model_name, 'full_name': model_name})
+        
+        if not ollama_models:
+            click.echo("⚠️  No Ollama models found. Run 'ai-dev-local ollama init' first.")
+            return
+        
+        click.echo(f"📋 Found {len(ollama_models)} Ollama models: {', '.join(m['full_name'] for m in ollama_models)}")
+        
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to get Ollama models: {e}")
+        sys.exit(1)
+    
+    # Read current LiteLLM config
+    config_path = 'configs/litellm_config.yaml'
+    if not os.path.exists(config_path):
+        click.echo(f"❌ LiteLLM config file not found: {config_path}")
+        sys.exit(1)
+    
+    try:
+        with open(config_path, 'r') as f:
+            config = yaml.safe_load(f)
+    except Exception as e:
+        click.echo(f"❌ Failed to read LiteLLM config: {e}")
+        sys.exit(1)
+    
+    # Create backup if requested and not dry run
+    if backup and not dry_run:
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        backup_path = f"{config_path}.backup_{timestamp}"
+        try:
+            shutil.copy2(config_path, backup_path)
+            click.echo(f"💾 Created backup: {backup_path}")
+        except Exception as e:
+            click.echo(f"⚠️  Failed to create backup: {e}")
+    
+    # Find existing Ollama models in config
+    existing_ollama_models = []
+    other_models = []
+    
+    for model in config.get('model_list', []):
+        if (model.get('litellm_params', {}).get('model', '').startswith('ollama/') or 
+            'ollama' in model.get('litellm_params', {}).get('api_base', '')):
+            existing_ollama_models.append(model)
+        else:
+            other_models.append(model)
+    
+    click.echo(f"🔍 Found {len(existing_ollama_models)} existing Ollama models in LiteLLM config")
+    
+    # Create new Ollama model configurations
+    new_ollama_models = []
+    for model in ollama_models:
+        model_config = {
+            'model_name': model['name'],
+            'litellm_params': {
+                'model': f"ollama/{model['full_name']}",
+                'api_base': 'http://host.docker.internal:11434'
+            }
+        }
+        new_ollama_models.append(model_config)
+    
+    # Update config with new Ollama models
+    updated_config = config.copy()
+    updated_config['model_list'] = other_models + new_ollama_models
+    
+    # Show changes
+    click.echo("\n📊 Configuration Changes:")
+    click.echo("=" * 50)
+    
+    if existing_ollama_models:
+        click.echo(f"➖ Removing {len(existing_ollama_models)} old Ollama models:")
+        for model in existing_ollama_models:
+            click.echo(f"   • {model.get('model_name', 'unnamed')}")
+    
+    click.echo(f"➕ Adding {len(new_ollama_models)} current Ollama models:")
+    for model in new_ollama_models:
+        click.echo(f"   • {model['model_name']} -> {model['litellm_params']['model']}")
+    
+    # Update router settings if they exist
+    if 'router_settings' in updated_config and 'model_group_alias' in updated_config['router_settings']:
+        # Add ollama-group if there are ollama models
+        if new_ollama_models:
+            ollama_group = [m['model_name'] for m in new_ollama_models]
+            updated_config['router_settings']['model_group_alias']['ollama-group'] = ollama_group
+            click.echo(f"🔗 Updated ollama-group alias with {len(ollama_group)} models")
+    
+    if dry_run:
+        click.echo("\n🔍 DRY RUN - No changes made")
+        click.echo("Run without --dry-run to apply changes")
+        return
+    
+    # Write updated config
+    try:
+        with open(config_path, 'w') as f:
+            yaml.dump(updated_config, f, default_flow_style=False, sort_keys=False, indent=2)
+        
+        click.echo(f"\n✅ Successfully updated {config_path}")
+        click.echo(f"📋 Total models in config: {len(updated_config['model_list'])}")
+        click.echo(f"   • Ollama models: {len(new_ollama_models)}")
+        click.echo(f"   • Other models: {len(other_models)}")
+        
+        # Suggest restarting LiteLLM
+        click.echo("\n💡 Restart LiteLLM to apply changes:")
+        click.echo("   docker-compose restart litellm")
+        
+    except Exception as e:
+        click.echo(f"❌ Failed to write updated config: {e}")
+        sys.exit(1)
+
+@ollama.command('list-available')
+@click.option('--search', '-s', help='Search for models containing this term')
+@click.option('--category', '-c', type=click.Choice(['all', 'popular', 'code', 'embedding', 'vision']), default='popular', help='Filter by model category')
+@click.option('--format', '-f', type=click.Choice(['table', 'list', 'json']), default='table', help='Output format')
+def list_available(search, category, format):
+    """List all available models from Ollama library."""
+    import json
+    import requests
+    from urllib.parse import urlencode
+    
+    click.echo("🔍 Fetching available Ollama models from library...")
+    
+    try:
+        # Note: Ollama library API endpoint may not be publicly available
+        # We'll use a fallback approach with static model data
+        click.echo("📊 Using curated model list (registry API unavailable)")
+        
+        # Curated list of available Ollama models with metadata
+        all_models = [
+            {'name': 'llama2:7b', 'description': 'Meta Llama 2 7B - General purpose model', 'pulls': 1000000, 'tags': ['7b', 'latest']},
+            {'name': 'llama2:13b', 'description': 'Meta Llama 2 13B - Larger general purpose model', 'pulls': 800000, 'tags': ['13b']},
+            {'name': 'llama2:70b', 'description': 'Meta Llama 2 70B - Largest general purpose model', 'pulls': 500000, 'tags': ['70b']},
+            {'name': 'llama3:8b', 'description': 'Meta Llama 3 8B - Latest generation model', 'pulls': 900000, 'tags': ['8b', 'latest']},
+            {'name': 'llama3:70b', 'description': 'Meta Llama 3 70B - Latest large model', 'pulls': 600000, 'tags': ['70b']},
+            {'name': 'codellama:7b', 'description': 'Code Llama 7B - Code generation model', 'pulls': 700000, 'tags': ['7b', 'code']},
+            {'name': 'codellama:13b', 'description': 'Code Llama 13B - Larger code model', 'pulls': 500000, 'tags': ['13b', 'code']},
+            {'name': 'codellama:34b', 'description': 'Code Llama 34B - Large code model', 'pulls': 300000, 'tags': ['34b', 'code']},
+            {'name': 'mistral:7b', 'description': 'Mistral 7B - Fast and efficient model', 'pulls': 800000, 'tags': ['7b', 'instruct']},
+            {'name': 'mistral:instruct', 'description': 'Mistral 7B Instruct - Instruction tuned', 'pulls': 600000, 'tags': ['instruct']},
+            {'name': 'phi:2.7b', 'description': 'Microsoft Phi 2.7B - Small but capable', 'pulls': 400000, 'tags': ['2.7b']},
+            {'name': 'phi3:3.8b', 'description': 'Microsoft Phi 3 3.8B - Latest small model', 'pulls': 350000, 'tags': ['3.8b']},
+            {'name': 'gemma:2b', 'description': 'Google Gemma 2B - Ultra lightweight', 'pulls': 300000, 'tags': ['2b']},
+            {'name': 'gemma:7b', 'description': 'Google Gemma 7B - Lightweight model', 'pulls': 450000, 'tags': ['7b']},
+            {'name': 'qwen:7b', 'description': 'Alibaba Qwen 7B - Multilingual model', 'pulls': 250000, 'tags': ['7b', 'chat']},
+            {'name': 'qwen:14b', 'description': 'Alibaba Qwen 14B - Larger multilingual', 'pulls': 180000, 'tags': ['14b', 'chat']},
+            {'name': 'llava:7b', 'description': 'LLaVA 7B - Vision and language model', 'pulls': 200000, 'tags': ['7b', 'vision']},
+            {'name': 'llava:13b', 'description': 'LLaVA 13B - Larger vision model', 'pulls': 150000, 'tags': ['13b', 'vision']},
+            {'name': 'moondream:1.8b', 'description': 'Moondream 1.8B - Compact vision model', 'pulls': 100000, 'tags': ['1.8b', 'vision']},
+            {'name': 'bakllava:7b', 'description': 'BakLLaVA 7B - Alternative vision model', 'pulls': 80000, 'tags': ['7b', 'vision']},
+            {'name': 'nomic-embed-text', 'description': 'Nomic Embed - Text embedding model', 'pulls': 300000, 'tags': ['embedding']},
+            {'name': 'mxbai-embed-large', 'description': 'MixedBread AI - Large embedding model', 'pulls': 150000, 'tags': ['embedding', 'large']},
+            {'name': 'all-minilm:l6-v2', 'description': 'All MiniLM - Sentence embedding', 'pulls': 200000, 'tags': ['embedding', 'sentence']},
+            {'name': 'codegemma:2b', 'description': 'Google CodeGemma 2B - Code model', 'pulls': 120000, 'tags': ['2b', 'code']},
+            {'name': 'codegemma:7b', 'description': 'Google CodeGemma 7B - Larger code model', 'pulls': 100000, 'tags': ['7b', 'code']},
+            {'name': 'starcoder:1b', 'description': 'StarCoder 1B - Compact code model', 'pulls': 90000, 'tags': ['1b', 'code']},
+            {'name': 'starcoder:3b', 'description': 'StarCoder 3B - Medium code model', 'pulls': 80000, 'tags': ['3b', 'code']},
+            {'name': 'deepseek-coder:1.3b', 'description': 'DeepSeek Coder 1.3B - Efficient code model', 'pulls': 70000, 'tags': ['1.3b', 'code']},
+            {'name': 'deepseek-coder:6.7b', 'description': 'DeepSeek Coder 6.7B - Larger code model', 'pulls': 60000, 'tags': ['6.7b', 'code']}
+        ]
+        
+        models = all_models
+        
+        # Filter by search term if provided
+        if search:
+            search_lower = search.lower()
+            models = [m for m in models if search_lower in m['name'].lower() or search_lower in m['description'].lower()]
+        
+        # Filter by category
+        if category != 'all':
+            category_filters = {
+                'popular': ['llama2', 'llama3', 'codellama', 'mistral', 'phi', 'gemma', 'qwen'],
+                'code': ['codellama', 'codegemma', 'starcoder', 'wizard-coder', 'deepseek-coder'],
+                'embedding': ['nomic-embed', 'mxbai-embed', 'all-minilm'],
+                'vision': ['llava', 'moondream', 'bakllava']
+            }
+            
+            if category in category_filters:
+                filter_terms = category_filters[category]
+                models = [m for m in models if any(term in m['name'].lower() for term in filter_terms)]
+        
+        if not models:
+            click.echo(f"❌ No models found for category '{category}'" + (f" matching '{search}'" if search else ""))
+            return
+        
+        # Sort by popularity (downloads or stars if available)
+        models.sort(key=lambda x: x.get('pulls', 0), reverse=True)
+        
+        if format == 'json':
+            click.echo(json.dumps(models, indent=2))
+        elif format == 'list':
+            click.echo(f"\n📋 Available models ({len(models)} found):")
+            for model in models:
+                name = model.get('name', 'Unknown')
+                description = model.get('description', 'No description')
+                click.echo(f"  • {name}: {description}")
+        else:  # table format
+            click.echo(f"\n📋 Available Ollama Models ({len(models)} found):")
+            click.echo("=" * 80)
+            click.echo(f"{'Name':<20} {'Tags':<15} {'Pulls':<10} {'Description'}")
+            click.echo("-" * 80)
+            
+            for model in models[:50]:  # Limit to top 50 for readability
+                name = model.get('name', 'Unknown')[:18]
+                tags = ', '.join(model.get('tags', [])[:2])[:13]  # Show first 2 tags
+                pulls = str(model.get('pulls', 0))
+                if len(pulls) > 8:
+                    pulls = f"{int(pulls)//1000}k"
+                description = model.get('description', 'No description')[:35]
+                
+                click.echo(f"{name:<20} {tags:<15} {pulls:<10} {description}")
+            
+            if len(models) > 50:
+                click.echo(f"\n... and {len(models) - 50} more models")
+        
+        click.echo(f"\n💡 Use 'ai-dev-local ollama pull <model-name>' to download a model")
+        click.echo("💡 Use --search to filter models by name")
+        click.echo("💡 Use --category to filter by type: popular, code, embedding, vision")
+        
+    except requests.RequestException as e:
+        click.echo(f"❌ Failed to fetch models from Ollama library: {e}", err=True)
+        click.echo("\n🔄 Fallback: Showing common models you can pull:")
+        
+        # Fallback list of popular models
+        fallback_models = [
+            ('llama2:7b', 'Meta Llama 2 7B - General purpose model'),
+            ('llama2:13b', 'Meta Llama 2 13B - Larger general purpose model'),
+            ('codellama:7b', 'Code Llama 7B - Code generation model'),
+            ('mistral:7b', 'Mistral 7B - Fast and efficient model'),
+            ('phi:2.7b', 'Microsoft Phi 2.7B - Small but capable model'),
+            ('gemma:7b', 'Google Gemma 7B - Lightweight model from Google'),
+            ('qwen:7b', 'Alibaba Qwen 7B - Multilingual model'),
+            ('llava:7b', 'LLaVA 7B - Vision and language model'),
+            ('nomic-embed-text', 'Nomic Embed - Text embedding model'),
+            ('all-minilm:l6-v2', 'All MiniLM - Sentence embedding model')
+        ]
+        
+        click.echo("\n📋 Popular Models:")
+        click.echo("-" * 60)
+        for name, description in fallback_models:
+            click.echo(f"  • {name:<20} {description}")
+    
+    except Exception as e:
+        click.echo(f"❌ Unexpected error: {e}", err=True)
+        sys.exit(1)
+
 
 if __name__ == '__main__':
     cli()

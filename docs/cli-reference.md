@@ -2,6 +2,117 @@
 
 AI Dev Local CLI provides various commands to manage and operate AI services effectively.
 
+## Command Schema Overview
+
+The AI Dev Local CLI follows a hierarchical command structure with clear categories and consistent patterns:
+
+```mermaid
+graph LR
+    A[ai-dev-local] --> B[Service Management]
+    A --> C[Configuration Management]
+    A --> D[Ollama Management]
+    A --> E[Browser Commands]
+    A --> F[Utility Commands]
+    
+    %% Service Management
+    B --> B1[start]
+    B --> B2[stop]
+    B --> B3[status]
+    B --> B4[logs]
+    B1 --> B1a["--ollama<br/>--build"]
+    B4 --> B4a["[SERVICE]"]
+    
+    %% Configuration Management
+    C --> C0[config]
+    C0 --> C1[init]
+    C0 --> C2[set]
+    C0 --> C3[show]
+    C0 --> C4[validate]
+    C0 --> C5[list]
+    C0 --> C6[edit]
+    C2 --> C2a["&lt;KEY&gt; &lt;VALUE&gt;"]
+    C3 --> C3a["[KEY]"]
+    C5 --> C5a["--category"]
+    
+    %% Ollama Management
+    D --> D0[ollama]
+    D0 --> D1[init]
+    D0 --> D2[list-available]
+    D0 --> D3[models]
+    D0 --> D4[pull]
+    D0 --> D5[remove]
+    D0 --> D6[sync-litellm]
+    D1 --> D1a["--models"]
+    D2 --> D2a["--search<br/>--category<br/>--format"]
+    D4 --> D4a["&lt;MODEL&gt;"]
+    D5 --> D5a["&lt;MODEL&gt;"]
+    D6 --> D6a["--dry-run<br/>--no-backup"]
+    
+    %% Browser Commands
+    E --> E1[dashboard]
+    E --> E2[docs]
+    E --> E3[docs-reload]
+    
+    %% Utility Commands
+    F --> F1[version]
+    F --> F2[--help]
+    
+    %% Styling
+    classDef rootClass fill:#1e3a8a,stroke:#1e40af,stroke-width:3px,color:#fff
+    classDef categoryClass fill:#059669,stroke:#047857,stroke-width:2px,color:#fff
+    classDef commandClass fill:#2563eb,stroke:#1d4ed8,stroke-width:2px,color:#fff
+    classDef subCommandClass fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#fff
+    classDef optionClass fill:#dc2626,stroke:#b91c1c,stroke-width:1px,color:#fff
+    classDef argumentClass fill:#ea580c,stroke:#c2410c,stroke-width:1px,color:#fff
+    
+    class A rootClass
+    class B,C,D,E,F categoryClass
+    class B1,B2,B3,B4,E1,E2,E3,F1,F2 commandClass
+    class C0,D0 commandClass
+    class C1,C2,C3,C4,C5,C6,D1,D2,D3,D4,D5,D6 subCommandClass
+    class B1a,B4a,C5a,D1a,D2a,D6a optionClass
+    class C2a,C3a,D4a,D5a argumentClass
+```
+
+### Command Categories
+
+| Category | Purpose | Key Commands |
+|----------|---------|-------------|
+| **Service Management** | Control Docker services | `start`, `stop`, `status`, `logs` |
+| **Configuration** | Manage .env settings | `config set`, `config show`, `config validate` |
+| **Ollama Management** | Local AI model operations | `ollama pull`, `ollama sync-litellm` |
+| **Browser Integration** | Quick access to UIs | `dashboard`, `docs`, `docs-reload` |
+| **Utility** | Version and help | `version`, `--help` |
+
+### Common Patterns
+
+- **Hierarchical Structure**: Commands are grouped logically (`config`, `ollama`)
+- **Consistent Options**: Similar flags across related commands (`--dry-run`, `--category`)
+- **Progressive Disclosure**: Basic commands work with defaults, advanced options available
+- **Context-Sensitive Help**: `--help` available at every level
+- **Safe Operations**: Destructive actions require confirmation or offer `--dry-run`
+
+### Quick Reference
+
+```bash
+# Essential workflow
+ai-dev-local config init                    # Setup
+ai-dev-local config set OPENAI_API_KEY ... # Configure
+ai-dev-local start                          # Launch
+ai-dev-local dashboard                      # Access
+
+# Local AI models
+ai-dev-local start --ollama                 # Start with Ollama
+ai-dev-local ollama list-available --category code  # Browse
+ai-dev-local ollama pull codellama:7b       # Install
+ai-dev-local ollama sync-litellm            # Integrate
+
+# Configuration management
+ai-dev-local config validate                # Check setup
+ai-dev-local config list --category api-keys # View keys
+ai-dev-local config edit                    # Manual edit
+```
+
 ## Main Commands
 
 ### `ai-dev-local --help`
@@ -38,14 +149,22 @@ ai-dev-local start --ollama --build
 - `--ollama`: Include Ollama service for local LLM models
 - `--build`: Build Docker images before starting services
 
-**Output:** Displays service URLs after successful start:
-- Dashboard: http://localhost:3002
-- Langfuse: http://localhost:3000
-- FlowiseAI: http://localhost:3001
-- Open WebUI: http://localhost:8081
-- LiteLLM Proxy: http://localhost:4000
-- Documentation: http://localhost:8000
-- Ollama: http://localhost:11434 (if --ollama flag used)
+**Example Output:**
+```
+🚀 Starting AI Dev Local services...
+📋 Version: v0.2.1-3-g1a2b3c4
+📅 Build Date: 2025-01-27T15:30:42Z
+✅ Services started successfully!
+
+📋 Service URLs:
+  • Dashboard: http://localhost:3002
+  • Langfuse: http://localhost:3000
+  • FlowiseAI: http://localhost:3001
+  • Open WebUI: http://localhost:8081
+  • LiteLLM Proxy: http://localhost:4000
+  • Documentation: http://localhost:8000
+  • Ollama: http://localhost:11434
+```
 
 ### `ai-dev-local stop`
 
@@ -55,12 +174,34 @@ Stop all running AI services cleanly.
 ai-dev-local stop
 ```
 
+**Example Output:**
+```
+🛑 Stopping AI Dev Local services...
+✅ Services stopped successfully!
+```
+
 ### `ai-dev-local status`
 
 Show the current status of all services.
 
 ```bash
 ai-dev-local status
+```
+
+**Example Output:**
+```
+📊 Service Status:
+      Name                    Command               State           Ports
+-------------------------------------------------------------------------
+ai-dev-local_dashboard_1    /docker-entrypoint.sh   Up          0.0.0.0:3002->80/tcp
+ai-dev-local_flowise_1      docker-entrypoint.sh     Up          0.0.0.0:3001->3000/tcp
+ai-dev-local_langfuse_1     docker-entrypoint.sh     Up          0.0.0.0:3000->3000/tcp
+ai-dev-local_litellm_1      python -m litellm        Up          0.0.0.0:4000->4000/tcp
+ai-dev-local_mkdocs_1       mkdocs serve             Up          0.0.0.0:8000->8000/tcp
+ai-dev-local_ollama_1       /bin/ollama serve        Up          0.0.0.0:11434->11434/tcp
+ai-dev-local_open-webui_1   bash start.sh            Up          0.0.0.0:8081->8080/tcp
+ai-dev-local_postgres_1     docker-entrypoint.sh     Up          0.0.0.0:5432->5432/tcp
+ai-dev-local_redis_1        docker-entrypoint.sh     Up          0.0.0.0:6379->6379/tcp
 ```
 
 ### `ai-dev-local logs [SERVICE]`
@@ -87,6 +228,32 @@ Open documentation in your default browser.
 ai-dev-local docs
 ```
 
+### `ai-dev-local docs-reload`
+
+Reload/update MkDocs documentation service.
+
+```bash
+ai-dev-local docs-reload
+```
+
+**Features:**
+- Checks if MkDocs service is running
+- Stops the current MkDocs service
+- Rebuilds the MkDocs Docker image to include documentation changes
+- Starts the service with the updated image
+- Shows updated documentation URL
+- Optionally opens documentation in browser
+
+**Use Cases:**
+- After editing documentation files (markdown, mkdocs.yml, etc.)
+- When documentation changes aren't reflected in the browser
+- To rebuild documentation with updated content
+- After adding new documentation pages or assets
+
+**Prerequisites:** MkDocs service must be running (`ai-dev-local start`)
+
+**Note:** This command rebuilds the Docker image, which may take a few moments depending on the size of your documentation.
+
 ### `ai-dev-local dashboard`
 
 Open the main dashboard in your default browser.
@@ -103,6 +270,11 @@ Display current version information.
 
 ```bash
 ai-dev-local version
+```
+
+**Example Output:**
+```
+🏷️  Current Version: v0.2.1-3-g1a2b3c4 (development)
 ```
 
 Shows version from git tags with fallback hierarchy:
@@ -124,14 +296,24 @@ Initialize .env file from .env.example template.
 ai-dev-local config init
 ```
 
+**Example Output:**
+```
+✅ Created .env from .env.example
+
+📝 Next steps:
+  1. Edit .env file with your API keys and settings
+  2. Use 'ai-dev-local config set' to update specific values
+  3. Use 'ai-dev-local config show' to view current settings
+```
+
 #### `ai-dev-local config set <KEY> <VALUE>`
 
 Set a configuration value in the .env file.
 
 ```bash
 # Set API keys
-ai-dev-local config set OPENAI_API_KEY sk-proj-your-key-here
-ai-dev-local config set ANTHROPIC_API_KEY sk-ant-your-key-here
+ai-dev-local config set OPENAI_API_KEY *********************
+ai-dev-local config set ANTHROPIC_API_KEY ********************
 
 # Set ports
 ai-dev-local config set LANGFUSE_PORT 3030
@@ -140,6 +322,11 @@ ai-dev-local config set DASHBOARD_PORT 3003
 # Set service options
 ai-dev-local config set DEBUG true
 ai-dev-local config set OLLAMA_GPU true
+```
+
+**Example Output:**
+```
+✅ Set LANGFUSE_PORT=3030
 ```
 
 **Features:**
