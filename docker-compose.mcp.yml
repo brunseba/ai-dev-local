@@ -17,6 +17,12 @@ services:
       - GIT_COMMITTER_EMAIL=${GIT_AUTHOR_EMAIL:-dev@local.ai}
     ports:
       - "9001:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-git"
     networks:
       - mcp-network
     healthcheck:
@@ -40,6 +46,12 @@ services:
       - READ_ONLY_DIRECTORIES=/workspace/.git
     ports:
       - "9002:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-filesystem"
     networks:
       - mcp-network
     healthcheck:
@@ -61,6 +73,12 @@ services:
       - TIMEOUT=30
     ports:
       - "9003:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-fetch"
     networks:
       - mcp-network
     healthcheck:
@@ -83,6 +101,12 @@ services:
       - MAX_MEMORY_SIZE=1073741824  # 1GB
     ports:
       - "9004:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-memory"
     networks:
       - mcp-network
     healthcheck:
@@ -102,6 +126,12 @@ services:
       - DEFAULT_TIMEZONE=${TIMEZONE:-UTC}
     ports:
       - "9005:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-time"
     networks:
       - mcp-network
     healthcheck:
@@ -133,6 +163,12 @@ services:
       "
     ports:
       - "9006:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-postgres"
     networks:
       - mcp-network
     healthcheck:
@@ -152,6 +188,12 @@ services:
       - DEMO_MODE=true
     ports:
       - "9007:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-everything"
     networks:
       - mcp-network
     healthcheck:
@@ -170,6 +212,12 @@ services:
       - GITHUB_READ_ONLY=${GITHUB_READ_ONLY:-false}
     ports:
       - "9008:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-github"
     networks:
       - mcp-network
     healthcheck:
@@ -190,6 +238,12 @@ services:
       - GITLAB_API_VERSION=${GITLAB_API_VERSION:-v4}
     ports:
       - "9009:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-gitlab"
     networks:
       - mcp-network
     healthcheck:
@@ -210,6 +264,12 @@ services:
       - SONARQUBE_ORGANIZATION=${SONARQUBE_ORGANIZATION:-}
     ports:
       - "9010:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-sonarqube"
     networks:
       - mcp-network
     healthcheck:
@@ -236,6 +296,12 @@ services:
       - GATEWAY_PORT=8080
     ports:
       - "9000:8080"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=mcp-gateway"
     networks:
       - mcp-network
     healthcheck:
