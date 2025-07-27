@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{DASHBOARD_TITLE}}</title>
+    <title>${DASHBOARD_TITLE}</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
         .header { background-color: #0066cc; color: white; padding: 10px 20px; }
@@ -20,7 +20,7 @@
 <body>
 
     <div class="header">
-        <h1>{{DASHBOARD_TITLE}}</h1>
+        <h1>${DASHBOARD_TITLE}</h1>
         <p>Access all your AI services from a single page</p>
     </div>
 
@@ -30,7 +30,7 @@
                 <div class="card-title">Langfuse</div>
                 <div class="card-content">
                     <p>LLM observability and analytics.</p>
-                    <a href="{{LANGFUSE_URL}}" class="btn">Open Langfuse</a>
+                    <a href="${LANGFUSE_URL}" class="btn">Open Langfuse</a>
                 </div>
             </div>
         </div>
@@ -39,7 +39,7 @@
                 <div class="card-title">FlowiseAI</div>
                 <div class="card-content">
                     <p>Visual AI workflow builder.</p>
-                    <a href="{{FLOWISE_URL}}" class="btn">Open FlowiseAI</a>
+                    <a href="${FLOWISE_URL}" class="btn">Open FlowiseAI</a>
                 </div>
             </div>
         </div>
@@ -48,7 +48,7 @@
                 <div class="card-title">Open WebUI</div>
                 <div class="card-content">
                     <p>Chat interface for LLMs.</p>
-                    <a href="{{OPENWEBUI_URL}}" class="btn">Open Open WebUI</a>
+                    <a href="${OPENWEBUI_URL}" class="btn">Open Open WebUI</a>
                 </div>
             </div>
         </div>
@@ -57,7 +57,7 @@
                 <div class="card-title">LiteLLM Proxy</div>
                 <div class="card-content">
                     <p>Unified API for LLM providers.</p>
-                    <a href="{{LITELLM_URL}}" class="btn">Open LiteLLM Proxy</a>
+                    <a href="${LITELLM_URL}" class="btn">Open LiteLLM Proxy</a>
                 </div>
             </div>
         </div>
@@ -66,7 +66,7 @@
                 <div class="card-title">Ollama</div>
                 <div class="card-content">
                     <p>Local LLM server.</p>
-                    <a href="{{OLLAMA_URL}}" class="btn">Open Ollama</a>
+                    <a href="${OLLAMA_URL}" class="btn">Open Ollama</a>
                 </div>
             </div>
         </div>
