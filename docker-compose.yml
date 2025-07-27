@@ -311,7 +311,7 @@ services:
       LITELLM_URL: http://${HOST:-localhost}:${LITELLM_PORT:-4000}
       OLLAMA_URL: http://${HOST:-localhost}:${OLLAMA_PORT:-11434}
       DASHBOARD_TITLE: ${DASHBOARD_TITLE:-AI Dev Local Dashboard}
-      APP_VERSION: ${GIT_TAG:-v0.2.0}
+      APP_VERSION: ${GIT_TAG:-v0.2.1}
       BUILD_DATE: ${BUILD_DATE:-unknown}
     volumes:
       - ./.git:/app/.git:ro  # Mount git directory for version detection

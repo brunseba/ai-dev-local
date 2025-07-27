@@ -20,7 +20,7 @@ def start(ollama, build):
         git_tag = subprocess.run(['git', 'describe', '--tags', '--always'], 
                                 capture_output=True, text=True, check=True).stdout.strip()
     except subprocess.CalledProcessError:
-        git_tag = 'v0.2.0'
+        git_tag = 'v0.2.1'
     
     # Get build date
     import datetime
