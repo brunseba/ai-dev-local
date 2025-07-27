@@ -15,6 +15,23 @@ graph TB
     D --> H[Other Providers]
     C -->|Store Data| I[SQLite/PostgreSQL]
     C -->|File Storage| J[Local Storage]
+    
+    %% Styling
+    classDef browserClass fill:#e8eaf6,stroke:#283593,stroke-width:2px,color:#000
+    classDef frontendClass fill:#e1f5fe,stroke:#0277bd,stroke-width:2px,color:#000
+    classDef backendClass fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef proxyClass fill:#fff3e0,stroke:#ef6c00,stroke-width:2px,color:#000
+    classDef localClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef apiClass fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#000
+    classDef storageClass fill:#fafafa,stroke:#424242,stroke-width:2px,color:#000
+    
+    class A browserClass
+    class B frontendClass
+    class C backendClass
+    class D proxyClass
+    class E localClass
+    class F,G,H apiClass
+    class I,J storageClass
 ```
 
 ## Key Features

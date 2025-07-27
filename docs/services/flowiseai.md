@@ -18,6 +18,22 @@ graph TB
     E --> K[Databases]
     F --> L[APIs]
     F --> M[Webhooks]
+    
+    %% Styling
+    classDef uiClass fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px,color:#000
+    classDef designerClass fill:#f1f8e9,stroke:#33691e,stroke-width:2px,color:#000
+    classDef componentClass fill:#fff8e1,stroke:#f57f17,stroke-width:2px,color:#000
+    classDef providerClass fill:#fce4ec,stroke:#ad1457,stroke-width:2px,color:#000
+    classDef dataClass fill:#e0f2f1,stroke:#00695c,stroke-width:2px,color:#000
+    classDef outputClass fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px,color:#000
+    classDef serviceClass fill:#ede7f6,stroke:#4527a0,stroke-width:2px,color:#000
+    
+    class A uiClass
+    class B designerClass
+    class C componentClass
+    class D,G,H,I providerClass
+    class E,J,K dataClass
+    class F,L,M outputClass
 ```
 
 ## Key Features

@@ -17,6 +17,33 @@ graph TB
     B -->|Log & Monitor| J[Analytics DB]
     B -->|Cache Responses| K[Redis Cache]
     B -->|Rate Limit| L[Rate Limiter]
+    
+    %% Styling
+    classDef clientClass fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px,color:#000
+    classDef proxyClass fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
+    classDef routerClass fill:#fff8e1,stroke:#f9a825,stroke-width:2px,color:#000
+    classDef poolClass fill:#fce4ec,stroke:#c2185b,stroke-width:2px,color:#000
+    classDef openaiClass fill:#ffebee,stroke:#d32f2f,stroke-width:2px,color:#000
+    classDef anthropicClass fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,color:#000
+    classDef googleClass fill:#e0f2f1,stroke:#00796b,stroke-width:2px,color:#000
+    classDef cohereClass fill:#fff3e0,stroke:#f57c00,stroke-width:2px,color:#000
+    classDef localClass fill:#ede7f6,stroke:#512da8,stroke-width:2px,color:#000
+    classDef analyticsClass fill:#e8eaf6,stroke:#3f51b5,stroke-width:2px,color:#000
+    classDef cacheClass fill:#ffebee,stroke:#e91e63,stroke-width:2px,color:#000
+    classDef limitClass fill:#e0f7fa,stroke:#00838f,stroke-width:2px,color:#000
+    
+    class A clientClass
+    class B proxyClass
+    class C routerClass
+    class D poolClass
+    class E openaiClass
+    class F anthropicClass
+    class G googleClass
+    class H cohereClass
+    class I localClass
+    class J analyticsClass
+    class K cacheClass
+    class L limitClass
 ```
 
 ## Key Features
