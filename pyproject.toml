@@ -4,10 +4,10 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-dev-local"
-version = "0.1.0"
-description = "AI Lab for local development with various AI services"
+version = "0.2.1"
+description = "A comprehensive AI lab for local development with various AI services and Model Context Protocol (MCP) integrations"
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Sebastien Brun", email = "brun_s@example.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.10"
@@ -42,15 +42,18 @@ docs = [
     "mkdocs-material>=8.5.0",
     "mkdocs-mermaid2-plugin>=0.6.0",
     "mkdocs-pdf-export-plugin>=0.5.0",
+    "mkdocs-git-revision-date-localized-plugin>=1.1.0",
 ]
 
 [project.scripts]
 ai-dev-local = "ai_dev_local.cli:cli"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/ai-dev-local"
-Repository = "https://github.com/yourusername/ai-dev-local"
-Documentation = "https://yourusername.github.io/ai-dev-local"
+Homepage = "https://github.com/brunseba/ai-dev-local"
+Repository = "https://github.com/brunseba/ai-dev-local"
+Documentation = "https://brunseba.github.io/ai-dev-local"
+Issues = "https://github.com/brunseba/ai-dev-local/issues"
+Changelog = "https://brunseba.github.io/ai-dev-local/changelog/"
 
 [tool.setuptools.packages.find]
 where = ["src"]
