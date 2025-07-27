@@ -132,7 +132,6 @@ services:
       EXECUTION_MODE: ${EXECUTION_MODE:-main}
       
       # Security and Access Control
-      DISABLE_FLOWISE_TELEMETRY: ${DISABLE_FLOWISE_TELEMETRY:-true}
       LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
       NUMBER_OF_PROXIES: ${NUMBER_OF_PROXIES:-1}
       
