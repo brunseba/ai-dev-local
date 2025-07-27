@@ -12,7 +12,10 @@ else
     VERSION="${APP_VERSION:-v0.2.0}"
 fi
 
-BUILD_DATE="${BUILD_DATE:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}"
+# Set build date with fallback
+if [ -z "$BUILD_DATE" ] || [ "$BUILD_DATE" = "unknown" ]; then
+    BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || date -u +"%Y-%m-%d %H:%M:%S UTC" 2>/dev/null || echo "unknown")"
+fi
 
 cat << EOF
 {

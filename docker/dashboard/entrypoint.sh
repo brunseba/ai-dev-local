@@ -27,7 +27,11 @@ export OLLAMA_URL="${OLLAMA_URL:-http://localhost:11434}"
 
 # Get version information
 export APP_VERSION="$(get_git_version)"
-export BUILD_DATE="${BUILD_DATE:-$(date -u +"%Y-%m-%dT%H:%M:%SZ")}"
+
+# Set build date with fallback
+if [ -z "$BUILD_DATE" ] || [ "$BUILD_DATE" = "unknown" ]; then
+    export BUILD_DATE="$(date -u +"%Y-%m-%dT%H:%M:%SZ" 2>/dev/null || echo "$(date -u +"%Y-%m-%d %H:%M:%S UTC" 2>/dev/null)")"
+fi
 
 echo "Dashboard starting with version: $APP_VERSION (built: $BUILD_DATE)"
 
