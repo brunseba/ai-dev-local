@@ -14,37 +14,82 @@ AI Dev Local provides a unified platform to run and manage multiple AI services 
 
 ## Architecture
 
+### System Context Diagram
+
+```mermaid
+C4Context
+    title AI Dev Local - System Context
+
+    Person(dev, "AI Developer", "Develops AI applications and experiments with models")
+    Person(researcher, "AI Researcher", "Conducts experiments and analyzes model performance")
+    Person(devops, "DevOps Engineer", "Manages infrastructure and deployment pipelines")
+    Person(pm, "Product Manager", "Tracks AI feature usage and performance metrics")
+
+    System(aidl, "AI Dev Local", "Local AI development platform with integrated services")
+    
+    System_Ext(llm_providers, "LLM Providers", "OpenAI, Anthropic, Local models, etc.")
+    System_Ext(gitlab, "GitLab", "Source code management and CI/CD")
+    System_Ext(github, "GitHub", "Source code management and collaboration")
+    System_Ext(sonarqube, "SonarQube", "Code quality and security analysis")
+    System_Ext(ide, "IDE/Editor", "VS Code, Cursor, Codium with MCP support")
+
+    Rel(dev, aidl, "Uses CLI, builds workflows, chats with models")
+    Rel(researcher, aidl, "Analyzes performance, tracks experiments")
+    Rel(devops, aidl, "Manages services, monitors infrastructure")
+    Rel(pm, aidl, "Reviews usage analytics, cost tracking")
+    
+    Rel(aidl, llm_providers, "Proxies requests, aggregates responses")
+    Rel(aidl, gitlab, "Integrates via MCP for issues, CI/CD")
+    Rel(aidl, github, "Integrates via MCP for code reviews")
+    Rel(aidl, sonarqube, "Integrates via MCP for quality metrics")
+    Rel(ide, aidl, "Connects to MCP servers")
+```
+
+### Component Architecture
+
 ```mermaid
 graph TB
-    CLI[AI Dev Local CLI]
-    
-    subgraph "Server Services"
-        LF[Langfuse<br/>Observability]
-        FW[FlowiseAI<br/>Workflow Builder]
-        OW[Open WebUI<br/>Chat Interface]
-        LL[LiteLLM Proxy<br/>API Gateway]
+    subgraph "Developer Laptop"
+        CLI[AI Dev Local CLI]
+        IDE[IDE/Editor<br/>💻 VS Code, Cursor, etc.]
+        BROWSER[Web Browser<br/>🌐 Access to Web UIs]
     end
     
-    subgraph "MCP Services"
-        GL[GitLab MCP]
-        GH[GitHub MCP]
-        SQ[SonarQube MCP]
+    subgraph "Web Services"
+        LF[Langfuse<br/>📊 Observability]
+        FW[FlowiseAI<br/>🎨 Workflow Builder]
+        OW[Open WebUI<br/>💬 Chat Interface]
+        LL[LiteLLM Proxy<br/>🚀 API Gateway]
+        DOCS[Documentation<br/>📖 MkDocs Server]
     end
     
-    subgraph "External Services"
-        GLR[GitLab]
-        GHR[GitHub]
-        SQR[SonarQube]
+    subgraph "MCP Servers"
+        GL[GitLab MCP<br/>📋 Issues & CI/CD]
+        GH[GitHub MCP<br/>🔀 Code Reviews]
+        SQ[SonarQube MCP<br/>🔍 Quality Analysis]
+    end
+    
+    subgraph "External Integrations"
+        GLR[GitLab API]
+        GHR[GitHub API]
+        SQR[SonarQube API]
+        LLMP[LLM Providers<br/>OpenAI, Anthropic, etc.]
     end
     
     CLI --> LF
     CLI --> FW
     CLI --> OW
     CLI --> LL
+    CLI --> DOCS
     
     CLI --> GL
     CLI --> GH
     CLI --> SQ
+    
+    BROWSER --> LF
+    BROWSER --> FW
+    BROWSER --> OW
+    BROWSER --> DOCS
     
     GL --> GLR
     GH --> GHR
@@ -53,6 +98,20 @@ graph TB
     FW --> LL
     OW --> LL
     LF --> LL
+    LL --> LLMP
+    
+    IDE -.-> GL
+    IDE -.-> GH
+    IDE -.-> SQ
+    
+    style CLI fill:#e1f5fe
+    style IDE fill:#e3f2fd
+    style BROWSER fill:#f1f8e9
+    style LF fill:#f3e5f5
+    style FW fill:#e8f5e8
+    style OW fill:#fff3e0
+    style LL fill:#fce4ec
+    style DOCS fill:#e8eaf6
 ```
 
 ## Quick Start
