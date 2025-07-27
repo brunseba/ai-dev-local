@@ -75,14 +75,17 @@ DATABASE_PASSWORD=postgres
 DATABASE_NAME=flowise
 
 # Authentication
-JWT_AUTH_TOKEN_SECRET=your-jwt-secret
-FLOWISE_USERNAME=admin
-FLOWISE_PASSWORD=admin123
+JWT_AUTH_TOKEN_SECRET=${JWT_AUTH_TOKEN_SECRET}
+FLOWISE_USERNAME=${FLOWISE_USERNAME}
+FLOWISE_PASSWORD=${FLOWISE_PASSWORD}
 
 # Storage Paths
 SECRETKEY_PATH=/root/.flowise
 LOG_PATH=/root/.flowise/logs
 BLOB_STORAGE_PATH=/root/.flowise/storage
+
+# Telemetry Settings
+DISABLE_FLOWISE_TELEMETRY=true
 ```
 
 ### Node Configuration Example
@@ -100,14 +103,6 @@ BLOB_STORAGE_PATH=/root/.flowise/storage
   "outputs": ["response"]
 }
 ```
-
-## Default Credentials
-
-- **Username:** admin
-- **Password:** admin123
-
-!!! warning "Security"
-    Change default credentials in production environments.
 
 ## Access
 

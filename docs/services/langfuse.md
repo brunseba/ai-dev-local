@@ -34,6 +34,14 @@ graph TD;
 - Query and event logging
 - Custom alerts and notifications
 
+## Configuration
+
+### Telemetry Settings
+```bash
+# Disable telemetry for privacy
+TELEMETRY_ENABLED=false
+```
+
 ## Access
 
 The Langfuse dashboard is accessible at:

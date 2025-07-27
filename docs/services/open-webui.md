@@ -77,8 +77,8 @@ OPENAI_API_BASE_URL=http://litellm:4000/v1
 OPENAI_API_KEY=******************
 
 # Security Configuration
-WEBUI_SECRET_KEY=your-secret-key
-WEBUI_JWT_SECRET_KEY=your-jwt-secret-key
+WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
+WEBUI_JWT_SECRET_KEY=${WEBUI_JWT_SECRET_KEY}
 
 # User Management
 DEFAULT_USER_ROLE=admin

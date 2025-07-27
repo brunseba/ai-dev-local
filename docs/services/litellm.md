@@ -87,8 +87,8 @@ REDIS_PORT=6379
 REDIS_PASSWORD=
 
 # UI Authentication
-UI_USERNAME=admin
-UI_PASSWORD=admin123
+UI_USERNAME=${LITELLM_UI_USERNAME}
+UI_PASSWORD=${LITELLM_UI_PASSWORD}
 
 # Provider API Keys
 OPENAI_API_KEY=sk-proj-your-openai-key
@@ -104,6 +104,9 @@ LANGFUSE_HOST=http://langfuse:3000
 # Logging
 LITELLM_LOG=INFO
 LITELLM_DEBUG=false
+
+# Telemetry Settings
+LITELLM_TELEMETRY=false
 ```
 
 ### Model Configuration (litellm_config.yaml)
@@ -227,15 +230,6 @@ general_settings:
   }
 }
 ```
-
-## Default Credentials
-
-- **UI Username:** admin
-- **UI Password:** admin123
-- **Master Key:** Required for API access
-
-!!! warning "Security"
-    Change default credentials and set a strong master key in production.
 
 ## Access
 
