@@ -1,0 +1,90 @@
+site_name: AI Dev Local
+site_description: AI Lab for local development with various AI services
+site_url: https://yourusername.github.io/ai-dev-local/
+repo_url: https://github.com/yourusername/ai-dev-local
+repo_name: yourusername/ai-dev-local
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.highlight
+    - search.share
+    - toc.follow
+    - content.code.copy
+    - content.code.select
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quick-start.md
+  - Server Services:
+    - Langfuse: services/langfuse.md
+    - FlowiseAI: services/flowiseai.md
+    - Open WebUI: services/open-webui.md
+    - LiteLLM Proxy: services/litellm.md
+  - MCP Services:
+    - GitLab MCP: mcp/gitlab.md
+    - GitHub MCP: mcp/github.md
+    - SonarQube MCP: mcp/sonarqube.md
+  - CLI Reference: cli-reference.md
+  - Development: development.md
+  - Changelog: changelog.md
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+  - mermaid2:
+      arguments:
+        theme: |
+          ^(JSON.parse(__md_get("__palette").index == 1)) ?
+            'dark' : 'light'
+  - pdf-export:
+      verbose: true
+      media_type: print
+      enabled_if_env: ENABLE_PDF_EXPORT
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - tables
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+
+extra:
+  version:
+    provider: mike
