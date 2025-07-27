@@ -1,0 +1,15 @@
+{
+  "name": "github-mcp-http-wrapper",
+  "version": "1.0.0",
+  "description": "HTTP wrapper for GitHub MCP Server",
+  "main": "wrapper.js",
+  "scripts": {
+    "start": "node wrapper.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "author": "AI Dev Local",
+  "license": "MIT"
+}

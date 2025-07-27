@@ -206,6 +206,50 @@ def version():
             click.echo(f"🏷️  Current Version: {__version__} (no git tags found)")
 
 @cli.group()
+def mcp():
+    """Manage MCP services."""
+    pass
+
+@mcp.command()
+def start():
+    """Start MCP servers using docker-compose.mcp.yml."""
+    click.echo("🚀 Starting MCP servers...")
+    try:
+        subprocess.run(['docker-compose', '-p', 'ai-dev-mcp', '-f', 'docker-compose.mcp.yml', '--env-file', '.env', 'up', '-d'], check=True)
+        click.echo("✅ MCP servers started successfully!")
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to start MCP servers: {e}", err=True)
+
+@mcp.command()
+def stop():
+    """Stop MCP servers using docker-compose.mcp.yml."""
+    click.echo("🛑 Stopping MCP servers...")
+    try:
+        subprocess.run(['docker-compose', '-p', 'ai-dev-mcp', '-f', 'docker-compose.mcp.yml', 'down'], check=True)
+        click.echo("✅ MCP servers stopped successfully!")
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to stop MCP servers: {e}", err=True)
+
+@mcp.command()
+def status():
+    """Show status of MCP servers using docker-compose.mcp.yml."""
+    click.echo("📊 MCP Server Status:")
+    try:
+        cmd = ['docker-compose', '-p', 'ai-dev-mcp', '-f', 'docker-compose.mcp.yml', 'ps']
+        result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+        # Check if output contains only the header (meaning no services)
+        lines = result.stdout.strip().split('\n')
+        if len(lines) <= 1 or (len(lines) == 1 and 'NAME' in lines[0]):
+            click.echo("ℹ️ No MCP services are currently running.")
+            click.echo("💡 Use 'ai-dev-local mcp start' to start MCP services.")
+        else:
+            click.echo(result.stdout)
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to get MCP server status: {e}", err=True)
+        if e.stderr:
+            click.echo(f"Error details: {e.stderr}", err=True)
+
+@cli.group()
 def config():
     """Manage configuration and .env file."""
     pass
@@ -498,11 +542,14 @@ def list(category):
             'keys': ['TELEMETRY_ENABLED', 'DEBUG', 'LOG_LEVEL', 'WEBUI_SECRET_KEY', 'WEBUI_JWT_SECRET_KEY',
                     'LITELLM_MASTER_KEY', 'DASHBOARD_TITLE', 'OLLAMA_AUTO_PULL_MODELS', 'OLLAMA_GPU']
         },
-        'mcp': {
-            'title': '🤖 MCP (Model Context Protocol)',
-            'keys': ['GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'TIMEZONE', 'GITHUB_PERSONAL_ACCESS_TOKEN',
-                    'GITLAB_TOKEN', 'SONARQUBE_URL', 'SONARQUBE_TOKEN']
-        }
+            'mcp': {
+                'title': '🤖 MCP (Model Context Protocol)',
+                'keys': ['MCP_GATEWAY_PORT', 'MCP_GIT_PORT', 'MCP_FILESYSTEM_PORT', 'MCP_FETCH_PORT',
+                        'MCP_MEMORY_PORT', 'MCP_TIME_PORT', 'MCP_POSTGRES_PORT', 'MCP_EVERYTHING_PORT',
+                        'MCP_GITHUB_PORT', 'MCP_GITLAB_PORT', 'MCP_SONARQUBE_PORT', 
+                        'GIT_AUTHOR_NAME', 'GIT_AUTHOR_EMAIL', 'TIMEZONE', 'GITHUB_PERSONAL_ACCESS_TOKEN',
+                        'GITLAB_TOKEN', 'SONARQUBE_URL', 'SONARQUBE_TOKEN']
+            }
     }
     
     try:
