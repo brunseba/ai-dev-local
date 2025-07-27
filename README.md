@@ -2,7 +2,7 @@
 
 [![Python Version](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Documentation](https://img.shields.io/badge/docs-github%20pages-blue.svg)](https://yourusername.github.io/ai-dev-local/)
+[![Documentation](https://img.shields.io/badge/docs-github%20pages-blue.svg)](https://brunseba.github.io/ai-dev-local/)
 
 A comprehensive AI lab for local development with various AI services and Model Context Protocol (MCP) integrations.
 
@@ -26,7 +26,7 @@ pipx install ai-dev-local
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/ai-dev-local.git
+git clone https://github.com/brunseba/ai-dev-local.git
 cd ai-dev-local
 uv sync --extra dev
 ```
@@ -100,7 +100,7 @@ uv sync --extra dev
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/ai-dev-local.git
+git clone https://github.com/brunseba/ai-dev-local.git
 cd ai-dev-local
 
 # Install dependencies
@@ -140,7 +140,7 @@ ai-dev-local/
 
 ## 📚 Documentation
 
-Full documentation is available at [yourusername.github.io/ai-dev-local](https://yourusername.github.io/ai-dev-local/).
+Full documentation is available at [brunseba.github.io/ai-dev-local](https://brunseba.github.io/ai-dev-local/).
 
 ### Building Documentation Locally
 

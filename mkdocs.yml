@@ -1,8 +1,8 @@
 site_name: AI Dev Local
 site_description: AI Lab for local development with various AI services
-site_url: https://yourusername.github.io/ai-dev-local/
-repo_url: https://github.com/yourusername/ai-dev-local
-repo_name: yourusername/ai-dev-local
+site_url: https://brunseba.github.io/ai-dev-local/
+repo_url: https://github.com/brunseba/ai-dev-local
+repo_name: brunseba/ai-dev-local
 
 theme:
   name: material
@@ -102,7 +102,7 @@ extra:
     provider: mike
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/yourusername/ai-dev-local
+      link: https://github.com/brunseba/ai-dev-local
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/ai-dev-local/
   tags:
