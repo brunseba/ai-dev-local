@@ -79,7 +79,15 @@ services:
       TOOL_FUNCTION_EXTERNAL_DEP: ${TOOL_FUNCTION_EXTERNAL_DEP:-moment,lodash}
     volumes:
       - flowise_data:/root/.flowise
-    command: /bin/sh -c "sleep 15 && npx flowise start"
+    command: [
+      "--DATABASE_TYPE=postgres",
+      "--DATABASE_HOST=postgres",
+      "--DATABASE_PORT=5432",
+      "--DATABASE_USER=postgres",
+      "--DATABASE_PASSWORD=postgres",
+      "--DATABASE_NAME=flowise",
+      "--PORT=3000"
+    ]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/ping"]
       interval: 30s
