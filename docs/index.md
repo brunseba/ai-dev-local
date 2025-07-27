@@ -118,6 +118,6 @@ Ready to dive in? Choose your setup approach:
 
 ## Version
 
-Current version: **0.1.0**
+Current version: **v0.2.1**
 
 Last updated: {{ git_revision_date_localized }}
