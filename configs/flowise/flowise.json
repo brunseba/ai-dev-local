@@ -1,0 +1,85 @@
+{
+  "version": "1.0",
+  "name": "AI Dev Local - Flowise Configuration",
+  "description": "Silent setup configuration for Flowise in AI Dev Local environment",
+  
+  "authentication": {
+    "enabled": true,
+    "username": "admin",
+    "password": "admin123",
+    "jwtSecret": "AABBCCDDAABBCCDDAABBCCDDAABBCCDD",
+    "jwtRefreshSecret": "AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD",
+    "tokenExpiryMinutes": 360,
+    "refreshTokenExpiryMinutes": 43200
+  },
+  
+  "database": {
+    "type": "postgres",
+    "host": "postgres",
+    "port": 5432,
+    "database": "flowise",
+    "username": "postgres",
+    "password": "postgres",
+    "override": true
+  },
+  
+  "server": {
+    "port": 3000,
+    "corsOrigins": "*",
+    "iframeOrigins": "*",
+    "numberOfProxies": 1
+  },
+  
+  "features": {
+    "showCommunityNodes": true,
+    "disableTelemetry": true,
+    "langchainTracingV2": false,
+    "enableExecutionMode": "main"
+  },
+  
+  "storage": {
+    "secretKeyPath": "/root/.flowise",
+    "logPath": "/root/.flowise/logs",
+    "blobStoragePath": "/root/.flowise/storage",
+    "apiKeyPath": "/root/.flowise"
+  },
+  
+  "dependencies": {
+    "builtinDependencies": ["crypto", "fs"],
+    "externalDependencies": ["moment", "lodash"]
+  },
+  
+  "performance": {
+    "chatflowWorkerTimeout": 30000,
+    "deployTimeout": 120000,
+    "maxUploadSize": "50mb"
+  },
+  
+  "logging": {
+    "debug": false,
+    "logLevel": "info"
+  },
+  
+  "defaults": {
+    "chatflows": [],
+    "tools": [],
+    "credentials": [
+      {
+        "name": "OpenAI API",
+        "credentialName": "openAIApi",
+        "description": "Default OpenAI API configuration for AI Dev Local",
+        "inputs": {
+          "openAIApiKey": ""
+        }
+      },
+      {
+        "name": "Anthropic API",
+        "credentialName": "anthropicApi", 
+        "description": "Default Anthropic API configuration for AI Dev Local",
+        "inputs": {
+          "anthropicApiKey": ""
+        }
+      }
+    ]
+  }
+}

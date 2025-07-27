@@ -115,15 +115,36 @@ services:
       
       # JWT Auth Configuration
       JWT_AUTH_TOKEN_SECRET: ${JWT_AUTH_TOKEN_SECRET:-AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD}
-      JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_TOKEN_SECRET:-AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD}
+      JWT_REFRESH_TOKEN_SECRET: ${JWT_REFRESH_TOKEN_SECRET:-AABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDDAABBCCDD}
       JWT_ISSUER: ${JWT_ISSUER:-AI-Dev-Local}
       JWT_AUDIENCE: ${JWT_AUDIENCE:-AI-Dev-Local}
       JWT_TOKEN_EXPIRY_IN_MINUTES: ${JWT_TOKEN_EXPIRY_IN_MINUTES:-360}
       JWT_REFRESH_TOKEN_EXPIRY_IN_MINUTES: ${JWT_REFRESH_TOKEN_EXPIRY_IN_MINUTES:-43200}
       
+      # Silent Setup and Automation
+      FLOWISE_USERNAME: ${FLOWISE_USERNAME:-admin}
+      FLOWISE_PASSWORD: ${FLOWISE_PASSWORD:-admin123}
+      OVERRIDE_DATABASE: ${OVERRIDE_DATABASE:-true}
+      FLOWISE_SECRETKEY_OVERWRITE: ${FLOWISE_SECRETKEY_OVERWRITE:-mySecretKey123}
+      
+      # API Configuration
+      APIKEY_PATH: ${APIKEY_PATH:-/root/.flowise}
+      EXECUTION_MODE: ${EXECUTION_MODE:-main}
+      
+      # Security and Access Control
+      DISABLE_FLOWISE_TELEMETRY: ${DISABLE_FLOWISE_TELEMETRY:-true}
+      LANGCHAIN_TRACING_V2: ${LANGCHAIN_TRACING_V2:-false}
+      NUMBER_OF_PROXIES: ${NUMBER_OF_PROXIES:-1}
+      
+      # Performance Configuration
+      CHATFLOW_WORKER_TIMEOUT: ${CHATFLOW_WORKER_TIMEOUT:-30000}
+      DEPLOY_TIMEOUT: ${DEPLOY_TIMEOUT:-120000}
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-50mb}
+      
     volumes:
       - flowise_data:/root/.flowise
-    entrypoint: /bin/sh -c "sleep 3; flowise start"
+      - ./configs/flowise:/root/.flowise/config:ro  # Read-only config mount
+    entrypoint: /bin/sh -c "sleep 3; node /root/.flowise/config/init.js || true; flowise start"
     logging:
       driver: "json-file"
       options:
