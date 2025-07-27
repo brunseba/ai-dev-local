@@ -13,13 +13,9 @@ done
 
 echo "✅ Ollama service is ready!"
 
-# Define models to pull (customize as needed)
-MODELS=(
-    "llama2:7b"
-    "codellama:7b"
-    "mistral:7b"
-    "phi:2.7b"
-)
+# Get models from environment variable or use defaults
+MODELS_STRING="${OLLAMA_AUTO_PULL_MODELS:-llama2:7b,codellama:7b,mistral:7b,phi:2.7b}"
+IFS=',' read -ra MODELS <<< "$MODELS_STRING"
 
 # Function to pull a model
 pull_model() {
