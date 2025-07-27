@@ -1,0 +1,74 @@
+{
+  "mcp": {
+    "inputs": [
+      {
+        "type": "promptString",
+        "id": "github_token",
+        "description": "GitHub Personal Access Token",
+        "password": true
+      },
+      {
+        "type": "promptString", 
+        "id": "gitlab_token",
+        "description": "GitLab Personal Access Token (optional)",
+        "password": true
+      },
+      {
+        "type": "promptString",
+        "id": "sonarqube_token", 
+        "description": "SonarQube Token (optional)",
+        "password": true
+      }
+    ],
+    "servers": {
+      "github": {
+        "command": "docker",
+        "args": [
+          "run",
+          "-i",
+          "--rm",
+          "-e",
+          "GITHUB_PERSONAL_ACCESS_TOKEN",
+          "-e",
+          "GITHUB_TOOLSETS=repos,issues,pull_requests,actions,code_security,context",
+          "ghcr.io/github/github-mcp-server"
+        ],
+        "env": {
+          "GITHUB_PERSONAL_ACCESS_TOKEN": "${input:github_token}"
+        }
+      },
+      "gitlab": {
+        "command": "docker",
+        "args": [
+          "run",
+          "-i", 
+          "--rm",
+          "-e",
+          "GITLAB_TOKEN",
+          "-e",
+          "GITLAB_URL=https://gitlab.com",
+          "zereight/gitlab-mcp"
+        ],
+        "env": {
+          "GITLAB_TOKEN": "${input:gitlab_token}"
+        }
+      },
+      "sonarqube": {
+        "command": "docker",
+        "args": [
+          "run",
+          "-i",
+          "--rm", 
+          "-e",
+          "SONARQUBE_TOKEN",
+          "-e",
+          "SONARQUBE_URL=http://localhost:9000",
+          "sonarsource/sonarqube-mcp-server"
+        ],
+        "env": {
+          "SONARQUBE_TOKEN": "${input:sonarqube_token}"
+        }
+      }
+    }
+  }
+}

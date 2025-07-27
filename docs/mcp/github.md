@@ -9,6 +9,20 @@ The GitHub MCP Server provides integration with GitHub for repository management
 - **Pull Requests**: Open, list, and manage pull requests across repositories.
 - **Code Security**: Integrate with GitHub's code scanning and security features.
 
+## HTTP Wrapper
+
+To enable HTTP transport compatibility, the GitHub MCP server uses a Node.js based HTTP wrapper that bridges HTTP requests to the server's stdio communication model. This allows seamless integration with other MCP servers and clients using standard web technologies.
+
+### Key Advantages:
+- **HTTP Compatibility**: Provides a RESTful API, making it easier to integrate with web-based applications and services.
+- **Toolset Expansion**: Access to 70+ GitHub tools and resources via HTTP endpoints.
+
+### Wrapper Details:
+- Built using Express.js for lightweight and performant communication.
+- Provides endpoints for core GitHub operations, including repository, issue, and pull request management.
+- Supports dynamic tool execution and real-time response streaming.
+- Includes comprehensive logging and error handling.
+
 ## Configuration
 
 Ensure you have configured the following environment variables:

@@ -1,0 +1,26 @@
+{
+  "name": "postgres-mcp-wrapper",
+  "version": "1.0.0",
+  "description": "HTTP wrapper for PostgreSQL MCP server",
+  "main": "wrapper.js",
+  "scripts": {
+    "start": "node wrapper.js",
+    "dev": "nodemon wrapper.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "mcp",
+    "postgresql",
+    "http",
+    "wrapper",
+    "api"
+  ],
+  "author": "AI Dev Local",
+  "license": "MIT"
+}

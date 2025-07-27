@@ -140,11 +140,12 @@ services:
       timeout: 10s
       retries: 3
 
-  # MCP PostgreSQL Server - Database operations
+  # MCP PostgreSQL Server - Database operations with HTTP wrapper
   mcp-postgres:
-    image: crystaldba/postgres-mcp:latest
+    build:
+      context: ./docker/mcp-postgres
+      dockerfile: Dockerfile
     restart: unless-stopped
-    command: ["--access-mode=restricted", "--transport=sse"]
     environment:
       - DATABASE_URI=postgresql://postgres:postgres@postgres:5432/postgres
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
@@ -165,11 +166,11 @@ services:
       - mcp-network
       - ai-dev-local
     healthcheck:
-      test: ["CMD", "pg_isready", "-h", "postgres", "-U", "postgres"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-
+      start_period: 10s
   # MCP Everything Server - Reference/test server
   mcp-everything:
     image: mcp/everything:latest
@@ -292,9 +293,10 @@ services:
       - mcp-fetch
       - mcp-memory
       - mcp-time
+      - mcp-postgres
       - mcp-github
     environment:
-      - MCP_SERVERS=git:http://mcp-git:8000,filesystem:http://mcp-filesystem:8000,fetch:http://mcp-fetch:8000,memory:http://mcp-memory:8000,time:http://mcp-time:8000,github:http://mcp-github:8000,gitlab:http://mcp-gitlab:8000,sonarqube:http://mcp-sonarqube:8000
+      - MCP_SERVERS=git:http://mcp-git:8000,filesystem:http://mcp-filesystem:8000,fetch:http://mcp-fetch:8000,memory:http://mcp-memory:8000,time:http://mcp-time:8000,postgres:http://mcp-postgres:8000,github:http://mcp-github:8000,gitlab:http://mcp-gitlab:8000,sonarqube:http://mcp-sonarqube:8000
       - GATEWAY_PORT=${MCP_GATEWAY_INTERNAL_PORT:-8080}
     ports:
       - "${MCP_GATEWAY_PORT:-9000}:${MCP_GATEWAY_INTERNAL_PORT:-8080}"

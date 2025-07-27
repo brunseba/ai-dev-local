@@ -1,0 +1,35 @@
+{
+  "name": "AI Dev Local MCP Configuration",
+  "version": "1.0.0",
+  "description": "Main MCP configuration file for AI Dev Local project",
+  "configurations": {
+    "postgres": {
+      "path": "mcp-postgres/mcp.json",
+      "description": "PostgreSQL MCP server configuration",
+      "enabled": true,
+      "priority": 1
+    }
+  },
+  "global": {
+    "logLevel": "info",
+    "timeout": 30000,
+    "retries": 3,
+    "autoReconnect": true
+  },
+  "environment": {
+    "development": {
+      "debug": true,
+      "logLevel": "verbose"
+    },
+    "production": {
+      "debug": false,
+      "logLevel": "error"
+    }
+  },
+  "metadata": {
+    "created": "2025-07-27T20:19:43Z",
+    "lastModified": "2025-07-27T20:19:43Z",
+    "author": "AI Dev Local",
+    "project": "ai-dev-local"
+  }
+}

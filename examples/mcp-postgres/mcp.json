@@ -1,0 +1,148 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "name": "PostgreSQL MCP Server",
+      "description": "AI Dev Local PostgreSQL database server with HTTP wrapper",
+      "type": "http",
+      "baseUrl": "http://localhost:9006",
+      "endpoints": {
+        "health": "/health",
+        "tools": "/tools",
+        "resources": "/resources",
+        "initialize": "/initialize",
+        "message": "/message"
+      },
+      "tools": [
+        {
+          "name": "list_tables",
+          "description": "List all tables in the PostgreSQL database",
+          "endpoint": "/tools/list_tables",
+          "method": "POST",
+          "parameters": {}
+        },
+        {
+          "name": "describe_table",
+          "description": "Get detailed schema information for a specific table",
+          "endpoint": "/tools/describe_table",
+          "method": "POST",
+          "parameters": {
+            "table_name": {
+              "type": "string",
+              "description": "Name of the table to describe",
+              "required": true
+            }
+          }
+        },
+        {
+          "name": "execute_query",
+          "description": "Execute a SQL query against the PostgreSQL database",
+          "endpoint": "/tools/execute_query",
+          "method": "POST",
+          "parameters": {
+            "query": {
+              "type": "string",
+              "description": "SQL query to execute",
+              "required": true
+            }
+          }
+        },
+        {
+          "name": "get_table_schema",
+          "description": "Get the schema definition for a table",
+          "endpoint": "/tools/get_table_schema",
+          "method": "POST",
+          "parameters": {
+            "table_name": {
+              "type": "string",
+              "description": "Name of the table",
+              "required": true
+            }
+          }
+        },
+        {
+          "name": "get_table_data",
+          "description": "Get sample data from a table",
+          "endpoint": "/tools/get_table_data",
+          "method": "POST",
+          "parameters": {
+            "table_name": {
+              "type": "string",
+              "description": "Name of the table",
+              "required": true
+            },
+            "limit": {
+              "type": "integer",
+              "description": "Maximum number of rows to return",
+              "required": false,
+              "default": 10
+            }
+          }
+        }
+      ],
+      "capabilities": {
+        "tools": true,
+        "resources": true,
+        "prompts": false
+      },
+      "authentication": {
+        "type": "none"
+      },
+      "timeout": 30000,
+      "retries": 3,
+      "connectionTest": {
+        "endpoint": "/health",
+        "expectedResponse": {
+          "status": "healthy",
+          "service": "postgres-mcp-wrapper"
+        }
+      }
+    }
+  },
+  "mcpClients": {
+    "vscode": {
+      "name": "VS Code MCP Client",
+      "type": "extension",
+      "servers": ["postgres"],
+      "settings": {
+        "autoConnect": true,
+        "reconnectOnFailure": true,
+        "displayInExplorer": true,
+        "enableNotifications": true
+      }
+    },
+    "claude-desktop": {
+      "name": "Claude Desktop",
+      "type": "desktop-app",
+      "servers": ["postgres"],
+      "configPath": "~/Library/Application Support/Claude/claude_desktop_config.json"
+    }
+  },
+  "environment": {
+    "development": {
+      "postgres": {
+        "baseUrl": "http://localhost:9006",
+        "debug": true,
+        "logLevel": "verbose"
+      }
+    },
+    "production": {
+      "postgres": {
+        "baseUrl": "http://localhost:9006",
+        "debug": false,
+        "logLevel": "error"
+      }
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2025-07-27T20:00:00Z",
+    "description": "MCP configuration for AI Dev Local PostgreSQL integration",
+    "author": "AI Dev Local",
+    "tags": ["postgresql", "database", "mcp", "ai-dev-local"],
+    "documentation": {
+      "readme": "README.md",
+      "examples": "examples/",
+      "api": "docs/api.md"
+    }
+  }
+}
