@@ -1,8 +1,9 @@
 site_name: AI Dev Local
-site_description: AI Lab for local development with various AI services
+site_description: A comprehensive AI lab for local development with various AI services and Model Context Protocol (MCP) integrations
 site_url: https://brunseba.github.io/ai-dev-local/
 repo_url: https://github.com/brunseba/ai-dev-local
 repo_name: brunseba/ai-dev-local
+edit_uri: edit/main/docs/
 
 theme:
   name: material
@@ -100,14 +101,27 @@ markdown_extensions:
 extra:
   version:
     provider: mike
+    default: latest
+  generator: false
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/brunseba/ai-dev-local
+      name: GitHub Repository
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/ai-dev-local/
+      name: PyPI Package
+    - icon: fontawesome/solid/globe
+      link: https://brunseba.github.io/ai-dev-local/
+      name: Documentation
+    - icon: fontawesome/solid/bug
+      link: https://github.com/brunseba/ai-dev-local/issues
+      name: Report Issues
   tags:
     AI: ai
     MCP: mcp
     Development: dev
     Docker: docker
     Integration: integration
+  analytics:
+    provider: google
+    property: G-XXXXXXXXXX  # Replace with actual Google Analytics ID if needed
