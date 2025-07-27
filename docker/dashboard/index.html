@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{DASHBOARD_TITLE}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
+        .header { background-color: #0066cc; color: white; padding: 10px 20px; }
+        .services { display: flex; flex-wrap: wrap; margin-top: 30px; }
+        .service { flex: 0 0 25%; box-sizing: border-box; padding: 10px; }
+        .card { background-color: white; border-radius: 5px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+        .card-title { background-color: #0066cc; color: white; padding: 10px; border-radius: 5px 5px 0 0; }
+        .card-content { padding: 15px; }
+        .btn { display: block; text-align: center; background: #0066cc; color: white; padding: 10px 0; border-radius: 5px; text-decoration: none; }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>{{DASHBOARD_TITLE}}</h1>
+        <p>Access all your AI services from a single page</p>
+    </div>
+
+    <div class="services">
+        <div class="service">
+            <div class="card">
+                <div class="card-title">Langfuse</div>
+                <div class="card-content">
+                    <p>LLM observability and analytics.</p>
+                    <a href="{{LANGFUSE_URL}}" class="btn">Open Langfuse</a>
+                </div>
+            </div>
+        </div>
+        <div class="service">
+            <div class="card">
+                <div class="card-title">FlowiseAI</div>
+                <div class="card-content">
+                    <p>Visual AI workflow builder.</p>
+                    <a href="{{FLOWISE_URL}}" class="btn">Open FlowiseAI</a>
+                </div>
+            </div>
+        </div>
+        <div class="service">
+            <div class="card">
+                <div class="card-title">Open WebUI</div>
+                <div class="card-content">
+                    <p>Chat interface for LLMs.</p>
+                    <a href="{{OPENWEBUI_URL}}" class="btn">Open Open WebUI</a>
+                </div>
+            </div>
+        </div>
+        <div class="service">
+            <div class="card">
+                <div class="card-title">LiteLLM Proxy</div>
+                <div class="card-content">
+                    <p>Unified API for LLM providers.</p>
+                    <a href="{{LITELLM_URL}}" class="btn">Open LiteLLM Proxy</a>
+                </div>
+            </div>
+        </div>
+        <div class="service">
+            <div class="card">
+                <div class="card-title">Ollama</div>
+                <div class="card-content">
+                    <p>Local LLM server.</p>
+                    <a href="{{OLLAMA_URL}}" class="btn">Open Ollama</a>
+                </div>
+            </div>
+        </div>
+        <div class="service">
+            <div class="card">
+                <div class="card-title">Documentation</div>
+                <div class="card-content">
+                    <p>Project documentation with MkDocs.</p>
+                    <a href="http://localhost:8000" class="btn">Open Documentation</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

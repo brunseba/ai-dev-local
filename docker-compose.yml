@@ -1,0 +1,224 @@
+services:
+  # Database services
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Langfuse - LLM observability and analytics
+  langfuse:
+    image: langfuse/langfuse:2
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/langfuse
+      NEXTAUTH_SECRET: mysecret
+      SALT: mysalt
+      NEXTAUTH_URL: http://localhost:3000
+      TELEMETRY_ENABLED: ${TELEMETRY_ENABLED:-true}
+      LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES: ${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-false}
+    volumes:
+      - langfuse_data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/public/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # FlowiseAI - Visual AI workflow builder
+  flowise:
+    image: flowiseai/flowise:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      DATABASE_NAME: flowise
+      FLOWISE_USERNAME: ${FLOWISE_USERNAME:-admin}
+      FLOWISE_PASSWORD: ${FLOWISE_PASSWORD:-admin123}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      TOOL_FUNCTION_BUILTIN_DEP: ${TOOL_FUNCTION_BUILTIN_DEP:-crypto,fs}
+      TOOL_FUNCTION_EXTERNAL_DEP: ${TOOL_FUNCTION_EXTERNAL_DEP:-moment,lodash}
+    volumes:
+      - flowise_data:/root/.flowise
+    command: /bin/sh -c "sleep 15 && npx flowise start"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Open WebUI - Chat interface for LLMs
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-http://litellm:4000/v1}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-1234567890abcdef}
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-t0p-s3cr3t}
+      WEBUI_JWT_SECRET_KEY: ${WEBUI_JWT_SECRET_KEY:-jwt-s3cr3t}
+      DEFAULT_MODELS: ${DEFAULT_MODELS:-gpt-3.5-turbo,gpt-4}
+      DEFAULT_USER_ROLE: ${DEFAULT_USER_ROLE:-admin}
+      ENABLE_SIGNUP: ${ENABLE_SIGNUP:-true}
+      ENABLE_LOGIN_FORM: ${ENABLE_LOGIN_FORM:-true}
+      WEBUI_NAME: ${WEBUI_NAME:-AI Dev Local}
+    volumes:
+      - open_webui_data:/app/backend/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # LiteLLM Proxy - Unified API for multiple LLM providers
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "4000:4000"
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-*******************}
+      DATABASE_URL: ${LITELLM_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/litellm}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      UI_USERNAME: ${LITELLM_UI_USERNAME:-admin}
+      UI_PASSWORD: ${LITELLM_UI_PASSWORD:-admin123}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse:3000}
+    volumes:
+      - ./configs/litellm_config.yaml:/app/config.yaml
+      - litellm_data:/app/data
+    command: ["--config", "/app/config.yaml", "--port", "4000", "--num_workers", "1"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Ollama - Local LLM server (optional)
+  ollama:
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    environment:
+      OLLAMA_ORIGINS: "*"
+      OLLAMA_HOST: "0.0.0.0:11434"
+      OLLAMA_MODELS: ${OLLAMA_MODELS:-/root/.ollama/models}
+    volumes:
+      - ollama_data:/root/.ollama
+      - ./scripts/ollama-init.sh:/ollama-init.sh
+    profiles:
+      - ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    # Uncomment the following lines if you have NVIDIA GPU support
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # AI Dev Dashboard - Single web page to access all services
+  dashboard:
+    build:
+      context: ./docker/dashboard
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3002:80"
+    environment:
+      LANGFUSE_URL: http://localhost:3000
+      FLOWISE_URL: http://localhost:3001
+      OPENWEBUI_URL: http://localhost:8080
+      LITELLM_URL: http://localhost:4000
+      OLLAMA_URL: http://localhost:11434
+      DASHBOARD_TITLE: ${DASHBOARD_TITLE:-AI Dev Local Dashboard}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MkDocs Publisher - Publishes documentation
+  mkdocs:
+    build:
+      context: ./docker/mkdocs
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    volumes:
+      - .:/docs
+    ports:
+      - "8000:8000"
+    working_dir: /docs
+    command: serve --dev-addr=0.0.0.0:8000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
+  langfuse_data:
+  flowise_data:
+  open_webui_data:
+  litellm_data:
+  ollama_data:
+
+networks:
+  default:
+    name: ai-dev-local
+    driver: bridge
