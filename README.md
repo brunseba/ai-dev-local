@@ -10,6 +10,7 @@ A comprehensive AI lab for local development with various AI services and Model 
 
 - **Multiple AI Services**: Langfuse, FlowiseAI, Open WebUI, and LiteLLM Proxy
 - **MCP Integration**: GitLab, GitHub, and SonarQube MCP servers
+- **IDE Integration**: Direct MCP server integration with VS Code, Codium, Cursor, and other editors
 - **Unified CLI**: Manage all services from a single command-line interface
 - **Docker Orchestration**: Easy deployment with Docker Compose
 - **Development Tools**: Pre-commit hooks, testing, and documentation
@@ -32,6 +33,8 @@ uv sync --extra dev
 
 ## 🏁 Quick Start
 
+### Option 1: Full Stack Deployment
+
 1. **Start all services**:
    ```bash
    ai-dev-local start
@@ -48,6 +51,21 @@ uv sync --extra dev
    - Open WebUI: http://localhost:8080
    - LiteLLM Proxy: http://localhost:4000
 
+### Option 2: IDE MCP Integration (Recommended for Development)
+
+1. **Configure your IDE** with the provided MCP settings:
+   - **VS Code/Codium**: Use `.vscode/mcp.json` (workspace-specific)
+   - **Global Setup**: Use `configs/ide-mcp/vscode-mcp.json`
+
+2. **Set up access tokens**:
+   - GitHub Personal Access Token
+   - GitLab Token (optional)
+   - SonarQube Token (optional)
+
+3. **Start using MCP features** directly in your AI assistant within the IDE
+
+📖 **Detailed Setup Guide**: See [docs/IDE_MCP_SETUP.md](docs/IDE_MCP_SETUP.md)
+
 ## 🛠️ Services
 
 ### Server Services
@@ -61,11 +79,13 @@ uv sync --extra dev
 
 ### MCP Services
 
-| Service | Description | Repository |
-|---------|-------------|------------|
-| **GitLab MCP** | GitLab integration | [gitlab-mcp](https://github.com/zereight/gitlab-mcp) |
-| **GitHub MCP** | GitHub integration | [github-mcp-server](https://github.com/github/github-mcp-server) |
-| **SonarQube MCP** | Code quality analysis | [sonarqube-mcp-server](https://github.com/SonarSource/sonarqube-mcp-server) |
+| Service | Description | Repository | IDE Support |
+|---------|-------------|------------|-------------|
+| **GitLab MCP** | GitLab integration | [gitlab-mcp](https://github.com/zereight/gitlab-mcp) | ✅ Configured |
+| **GitHub MCP** | GitHub integration | [github-mcp-server](https://github.com/github/github-mcp-server) | ✅ Configured |
+| **SonarQube MCP** | Code quality analysis | [sonarqube-mcp-server](https://github.com/SonarSource/sonarqube-mcp-server) | ✅ Configured |
+
+**IDE Integration**: Pre-configured for VS Code, Codium, Cursor, and other MCP-compatible editors. See [IDE MCP Setup Guide](docs/IDE_MCP_SETUP.md) for details.
 
 ## 🔧 Development
 
@@ -101,14 +121,21 @@ black src tests
 
 ```
 ai-dev-local/
-├── src/ai_dev_local/     # Main package
-├── tests/                # Unit tests
-├── docs/                 # Documentation
-├── docker/               # Docker configurations
-├── scripts/              # Utility scripts
-├── pyproject.toml        # Project configuration
-├── mkdocs.yml           # Documentation configuration
-└── README.md            # This file
+├── src/ai_dev_local/          # Main package
+├── tests/                     # Unit tests
+├── docs/                      # Documentation
+│   ├── IDE_MCP_SETUP.md      # IDE MCP integration guide
+│   └── PHASE_3_MCP_INTEGRATION.md # MCP implementation plan
+├── configs/                   # Configuration files
+│   └── ide-mcp/              # IDE MCP configurations
+│       └── vscode-mcp.json   # Global VS Code/Codium MCP config
+├── .vscode/                   # VS Code workspace settings
+│   └── mcp.json              # Workspace MCP configuration
+├── docker/                    # Docker configurations
+├── scripts/                   # Utility scripts
+├── pyproject.toml            # Project configuration
+├── mkdocs.yml               # Documentation configuration
+└── README.md                # This file
 ```
 
 ## 📚 Documentation

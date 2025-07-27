@@ -96,10 +96,21 @@ ai-dev-local status
 - GitLab integration for issue tracking and CI/CD
 - GitHub integration for code reviews and discussions
 - SonarQube integration for code quality analysis
+- **IDE-side MCP servers** for direct integration with VS Code, Codium, Cursor, and other editors
 
 ## Getting Started
 
-Ready to dive in? Check out our [installation guide](getting-started/installation.md) and [quick start tutorial](getting-started/quick-start.md).
+Ready to dive in? Choose your setup approach:
+
+### Quick Start Options
+- **[Installation Guide](getting-started/installation.md)** - Full stack deployment
+- **[Quick Start Tutorial](getting-started/quick-start.md)** - Get up and running fast
+- **[IDE MCP Setup](IDE_MCP_SETUP.md)** - Direct IDE integration (recommended for development)
+
+### MCP Integration Approaches
+1. **IDE-side Integration** - Run MCP servers on-demand within your editor
+2. **Docker Compose Stack** - Full containerized MCP server deployment
+3. **Hybrid Approach** - Combine both for maximum flexibility
 
 ## Version
 

@@ -143,21 +143,40 @@ services:
     image: ghcr.io/berriai/litellm:main-latest
     restart: unless-stopped
     depends_on:
+      postgres:
+        condition: service_healthy
       redis:
         condition: service_healthy
     ports:
       - "4000:4000"
     environment:
+      # Core LiteLLM Settings
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-*******************}
       DATABASE_URL: ${LITELLM_DATABASE_URL:-postgresql://postgres:postgres@postgres:5432/litellm}
+      
+      # Redis Configuration
       REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      
+      # UI Authentication
       UI_USERNAME: ${LITELLM_UI_USERNAME:-admin}
       UI_PASSWORD: ${LITELLM_UI_PASSWORD:-admin123}
+      
+      # Langfuse Integration
       LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
       LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
       LANGFUSE_HOST: ${LANGFUSE_HOST:-http://langfuse:3000}
+      
+      # API Keys for LLM Providers
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
+      
+      # Logging and Debug
+      LITELLM_LOG: ${LITELLM_LOG:-INFO}
+      LITELLM_DEBUG: ${LITELLM_DEBUG:-false}
     volumes:
       - ./configs/litellm_config.yaml:/app/config.yaml
       - litellm_data:/app/data
@@ -167,6 +186,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 30s
 
   # Ollama - Local LLM server (optional)
   ollama:

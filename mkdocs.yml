@@ -12,11 +12,18 @@ theme:
     - navigation.expand
     - navigation.path
     - navigation.top
+    - navigation.indexes
+    - navigation.instant
+    - navigation.tracking
     - search.highlight
     - search.share
+    - search.suggest
     - toc.follow
+    - toc.integrate
     - content.code.copy
     - content.code.select
+    - content.code.annotate
+    - content.tabs.link
   palette:
     - scheme: default
       primary: indigo
@@ -36,6 +43,11 @@ nav:
   - Getting Started:
     - Installation: getting-started/installation.md
     - Quick Start: getting-started/quick-start.md
+  - MCP Integration:
+    - Overview: PHASE_3_MCP_INTEGRATION.md
+    - IDE Setup Guide: IDE_MCP_SETUP.md
+    - Servers Functionality: MCP_SERVERS_FUNCTIONALITY_TABLE.md
+    - Documentation Updates: DOCUMENTATION_UPDATES_SUMMARY.md
   - Server Services:
     - Langfuse: services/langfuse.md
     - FlowiseAI: services/flowiseai.md
@@ -88,3 +100,14 @@ markdown_extensions:
 extra:
   version:
     provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/yourusername/ai-dev-local
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/ai-dev-local/
+  tags:
+    AI: ai
+    MCP: mcp
+    Development: dev
+    Docker: docker
+    Integration: integration

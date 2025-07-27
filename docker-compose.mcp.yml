@@ -1,0 +1,256 @@
+services:
+  # MCP Git Server - Git repository operations
+  mcp-git:
+    image: mcp/git:latest
+    build:
+      context: https://github.com/modelcontextprotocol/servers.git#main
+      dockerfile: src/git/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - .:/workspace:ro  # Read-only access to current project
+      - ~/.gitconfig:/root/.gitconfig:ro  # Git configuration
+      - ~/.ssh:/root/.ssh:ro  # SSH keys for Git operations
+    environment:
+      - GIT_AUTHOR_NAME=${GIT_AUTHOR_NAME:-AI Dev Local}
+      - GIT_AUTHOR_EMAIL=${GIT_AUTHOR_EMAIL:-dev@local.ai}
+      - GIT_COMMITTER_NAME=${GIT_AUTHOR_NAME:-AI Dev Local}
+      - GIT_COMMITTER_EMAIL=${GIT_AUTHOR_EMAIL:-dev@local.ai}
+    ports:
+      - "9001:8000"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import mcp_server_git; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP Filesystem Server - Secure file operations
+  mcp-filesystem:
+    image: mcp/filesystem:latest
+    build:
+      context: https://github.com/modelcontextprotocol/servers.git#main
+      dockerfile: src/filesystem/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - .:/workspace  # Full access to current project
+      - /tmp/mcp-fs:/tmp/mcp-fs  # Temporary file operations
+    environment:
+      - ALLOWED_DIRECTORIES=/workspace,/tmp/mcp-fs
+      - READ_ONLY_DIRECTORIES=/workspace/.git
+    ports:
+      - "9002:8000"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import mcp_server_filesystem; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP Fetch Server - Web content retrieval
+  mcp-fetch:
+    image: mcp/fetch:latest
+    build:
+      context: https://github.com/modelcontextprotocol/servers.git#main
+      dockerfile: src/fetch/Dockerfile
+    restart: unless-stopped
+    environment:
+      - USER_AGENT=AI-Dev-Local-MCP/1.0
+      - MAX_RESPONSE_SIZE=10485760  # 10MB
+      - TIMEOUT=30
+    ports:
+      - "9003:8000"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import mcp_server_fetch; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP Memory Server - Persistent knowledge graph
+  mcp-memory:
+    image: mcp/memory:latest
+    build:
+      context: https://github.com/modelcontextprotocol/servers.git#main
+      dockerfile: src/memory/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - mcp_memory_data:/data
+    environment:
+      - MEMORY_STORE_PATH=/data/memory.db
+      - MAX_MEMORY_SIZE=1073741824  # 1GB
+    ports:
+      - "9004:8000"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import mcp_server_memory; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP Time Server - Time and timezone utilities
+  mcp-time:
+    image: mcp/time:latest
+    build:
+      context: https://github.com/modelcontextprotocol/servers.git#main
+      dockerfile: src/time/Dockerfile
+    restart: unless-stopped
+    environment:
+      - DEFAULT_TIMEZONE=${TIMEZONE:-UTC}
+    ports:
+      - "9005:8000"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import mcp_server_time; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP PostgreSQL Server - Database operations
+  mcp-postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postgres
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - ./configs/mcp-postgres:/app
+    command: >
+      sh -c "
+        pip install mcp-server-postgres &&
+        python -m mcp_server_postgres
+      "
+    ports:
+      - "9006:8000"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-h", "postgres", "-U", "postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP Everything Server - Reference/test server
+  mcp-everything:
+    image: mcp/everything:latest
+    build:
+      context: https://github.com/modelcontextprotocol/servers.git#main
+      dockerfile: src/everything/Dockerfile
+    restart: unless-stopped
+    environment:
+      - DEMO_MODE=true
+    ports:
+      - "9007:8000"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import mcp_server_everything; print('OK')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # MCP GitHub Server - Official GitHub integration
+  mcp-github:
+    image: ghcr.io/github/github-mcp-server:latest
+    restart: unless-stopped
+    environment:
+      - GITHUB_PERSONAL_ACCESS_TOKEN=${GITHUB_PERSONAL_ACCESS_TOKEN}
+      - GITHUB_TOOLSETS=${GITHUB_TOOLSETS:-repos,issues,pull_requests,actions,code_security,context}
+      - GITHUB_READ_ONLY=${GITHUB_READ_ONLY:-false}
+    ports:
+      - "9008:8000"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # MCP GitLab Server - GitLab integration
+  # Official repository: https://github.com/zereight/gitlab-mcp
+  mcp-gitlab:
+    image: zereight/gitlab-mcp:latest
+    restart: unless-stopped
+    environment:
+      - GITLAB_TOKEN=${GITLAB_TOKEN}
+      - GITLAB_URL=${GITLAB_URL:-https://gitlab.com}
+      - GITLAB_API_VERSION=${GITLAB_API_VERSION:-v4}
+    ports:
+      - "9009:8000"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # MCP SonarQube Server - Code quality analysis
+  # Official repository: https://github.com/SonarSource/sonarqube-mcp-server
+  mcp-sonarqube:
+    image: sonarsource/sonarqube-mcp-server:latest
+    restart: unless-stopped
+    environment:
+      - SONARQUBE_URL=${SONARQUBE_URL:-http://localhost:9000}
+      - SONARQUBE_TOKEN=${SONARQUBE_TOKEN}
+      - SONARQUBE_ORGANIZATION=${SONARQUBE_ORGANIZATION:-}
+    ports:
+      - "9010:8000"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # MCP Gateway - Central routing and management
+  mcp-gateway:
+    build:
+      context: ./docker/mcp-gateway
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - mcp-git
+      - mcp-filesystem
+      - mcp-fetch
+      - mcp-memory
+      - mcp-time
+    environment:
+      - MCP_SERVERS=git:http://mcp-git:8000,filesystem:http://mcp-filesystem:8000,fetch:http://mcp-fetch:8000,memory:http://mcp-memory:8000,time:http://mcp-time:8000,github:http://mcp-github:8000,gitlab:http://mcp-gitlab:8000,sonarqube:http://mcp-sonarqube:8000
+      - GATEWAY_PORT=8080
+    ports:
+      - "9000:8080"
+    networks:
+      - mcp-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  mcp_memory_data:
+
+networks:
+  mcp-network:
+    name: ai-dev-mcp
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
