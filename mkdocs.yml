@@ -54,6 +54,7 @@ nav:
     - FlowiseAI: services/flowiseai.md
     - Open WebUI: services/open-webui.md
     - LiteLLM Proxy: services/litellm.md
+    - Ollama: services/ollama.md
   - MCP Services:
     - GitLab MCP: mcp/gitlab.md
     - GitHub MCP: mcp/github.md
