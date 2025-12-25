@@ -50,8 +50,17 @@
             <div class="card">
                 <div class="card-title">FlowiseAI</div>
                 <div class="card-content">
-                    <p>Visual AI workflow builder.</p>
+                    <p>Visual AI workflow builder (broad focus).</p>
                     <a href="${FLOWISE_URL}" class="btn">Open FlowiseAI</a>
+                </div>
+            </div>
+        </div>
+        <div class="service">
+            <div class="card">
+                <div class="card-title">Langflow</div>
+                <div class="card-content">
+                    <p>Low-code AI agent builder (LangChain).</p>
+                    <a href="${LANGFLOW_URL}" class="btn">Open Langflow</a>
                 </div>
             </div>
         </div>
