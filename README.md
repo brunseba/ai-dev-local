@@ -9,10 +9,14 @@ A comprehensive AI lab for local development with various AI services and Model 
 ## 🚀 Features
 
 - **Multiple AI Services**: Langfuse, FlowiseAI, Open WebUI, and LiteLLM Proxy
+- **Local LLMs with Ollama**: Run AI models locally with flexible deployment options
+- **Ollama Multi-Mode Support**: Connect to Docker, native, or remote Ollama servers
+- **Vector Store**: OpenAI-compatible vector store API with PGVector for RAG workflows
 - **MCP Integration**: GitLab, GitHub, and SonarQube MCP servers
 - **IDE Integration**: Direct MCP server integration with VS Code, Codium, Cursor, and other editors
 - **Unified CLI**: Manage all services from a single command-line interface
 - **Docker Orchestration**: Easy deployment with Docker Compose
+- **Docker Image Tracking**: Monitor and update Docker image versions
 - **Development Tools**: Pre-commit hooks, testing, and documentation
 
 ## 📦 Installation
@@ -51,18 +55,40 @@ uv sync --extra dev
    - FlowiseAI: http://localhost:3001
    - Open WebUI: http://localhost:8081
    - LiteLLM Proxy: http://localhost:4000
+   - Vector Store API: http://localhost:8000
 
 4. **Manage local AI models** (optional):
    ```bash
-   # Start with local Ollama server
+   # Start with local Ollama server (Docker mode)
    ai-dev-local start --ollama
+   
+   # Or use native/remote Ollama
+   ai-dev-local ollama config set-mode native  # Use system Ollama
+   ai-dev-local ollama config set-mode remote  # Use remote server
    
    # Browse and install AI models
    ai-dev-local ollama list-available --category code
    ai-dev-local ollama pull codellama:7b
    
+   # View connection status
+   ai-dev-local ollama config show
+   
    # Sync models to unified API
    ai-dev-local ollama sync-litellm
+   ```
+   
+   📖 **Ollama Setup Guide**: See [docs/ollama-external-setup.md](docs/ollama-external-setup.md)
+
+5. **Track Docker image versions**:
+   ```bash
+   # List all Docker images used in the project
+   ai-dev-local docker track-versions
+   
+   # Check for available updates on Docker Hub
+   ai-dev-local docker track-versions --check-updates
+   
+   # Update a specific service image
+   ai-dev-local docker update-image postgres --version 16
    ```
 
 ### Option 2: IDE MCP Integration (Recommended for Development)
@@ -90,6 +116,7 @@ uv sync --extra dev
 | **FlowiseAI** | Visual AI workflow builder | 3001 | [docs](https://docs.flowiseai.com/) |
 | **Open WebUI** | Chat interface for LLMs | 8080 | [docs](https://docs.openwebui.com/) |
 | **LiteLLM Proxy** | Unified API for multiple LLM providers | 4000 | [docs](https://docs.litellm.ai/) |
+| **Vector Store** | OpenAI-compatible vector store with pgvector | 8000 | [docs](docs/VECTOR_STORE.md) |
 
 ### MCP Services
 

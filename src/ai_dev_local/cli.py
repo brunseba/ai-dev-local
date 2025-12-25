@@ -24,7 +24,10 @@ def start(ollama, build):
     
     # Get build date
     import datetime
-    build_date = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+    if hasattr(datetime, 'UTC'):
+        build_date = datetime.datetime.now(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%SZ')
+    else:
+        build_date = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     
     # Set environment variables
     env = os.environ.copy()
@@ -639,33 +642,335 @@ def edit():
     click.echo(f"   {os.path.abspath(env_file)}")
 
 @cli.group()
-def ollama():
-    """Manage Ollama local LLM server."""
+def docker():
+    """Manage Docker images and versions."""
     pass
+
+@docker.command('track-versions')
+@click.option('--format', '-f', type=click.Choice(['table', 'json', 'list']), default='table', help='Output format')
+@click.option('--check-updates', is_flag=True, help='Check for available updates on Docker Hub')
+def track_versions(format, check_updates):
+    """Track current Docker image versions used in the project."""
+    import yaml
+    import json
+    from datetime import datetime
+    
+    click.echo("🐳 Tracking Docker image versions...")
+    
+    # Read docker-compose files
+    compose_files = ['docker-compose.yml', 'docker-compose.mcp.yml']
+    images = {}
+    
+    for compose_file in compose_files:
+        import os
+        if not os.path.exists(compose_file):
+            continue
+        
+        try:
+            with open(compose_file, 'r') as f:
+                compose_data = yaml.safe_load(f)
+            
+            if 'services' in compose_data:
+                for service_name, service_config in compose_data.get('services', {}).items():
+                    if 'image' in service_config:
+                        image = service_config['image']
+                        images[service_name] = {
+                            'image': image,
+                            'source': compose_file,
+                            'current_version': None,
+                            'latest_version': None
+                        }
+                        
+                        # Parse image name and tag
+                        if ':' in image:
+                            image_name, tag = image.rsplit(':', 1)
+                            images[service_name]['image_name'] = image_name
+                            images[service_name]['current_version'] = tag
+                        else:
+                            images[service_name]['image_name'] = image
+                            images[service_name]['current_version'] = 'latest'
+        
+        except Exception as e:
+            click.echo(f"⚠️  Failed to read {compose_file}: {e}", err=True)
+    
+    if not images:
+        click.echo("❌ No Docker images found in compose files")
+        return
+    
+    # Check for updates if requested
+    if check_updates:
+        click.echo("🔍 Checking for updates on container registries...")
+        import requests
+        
+        for service_name, info in images.items():
+            image_name = info['image_name']
+            
+            try:
+                # Determine registry type and check for updates
+                registry_type = None
+                
+                # Identify registry
+                if image_name.startswith('ghcr.io/'):
+                    registry_type = 'ghcr'
+                elif image_name.startswith(('docker.io/', 'registry.hub.docker.com/')) or ('/' not in image_name or (image_name.count('/') == 1 and '.' not in image_name.split('/')[0])):
+                    registry_type = 'dockerhub'
+                else:
+                    # Check for other known registries
+                    known_unsupported = ['docker.litellm.ai', 'quay.io', 'gcr.io', 'registry.gitlab.com']
+                    for registry in known_unsupported:
+                        if image_name.startswith(f"{registry}/"):
+                            # Skip unsupported registries silently - leave latest_version as None
+                            registry_type = 'unsupported'
+                            break
+                    
+                    if not registry_type:
+                        # Unknown registry format
+                        registry_type = 'unknown'
+                
+                # Query registry based on type
+                if registry_type == 'ghcr':
+                    # GitHub Container Registry
+                    parts = image_name.replace('ghcr.io/', '').split('/')
+                    if len(parts) >= 2:
+                        owner = parts[0]
+                        repo = '/'.join(parts[1:])
+                        
+                        # Use GitHub API to get container versions
+                        api_url = f"https://api.github.com/users/{owner}/packages/container/{repo}/versions"
+                        headers = {'Accept': 'application/vnd.github.v3+json'}
+                        
+                        response = requests.get(api_url, headers=headers, timeout=5)
+                        
+                        if response.status_code == 200:
+                            versions = response.json()
+                            # Find latest stable version from tags
+                            for version in versions:
+                                tags = version.get('metadata', {}).get('container', {}).get('tags', [])
+                                for tag in tags:
+                                    # Skip pre-release tags
+                                    if not any(pre in tag.lower() for pre in ['alpha', 'beta', 'rc', 'dev', 'nightly', 'snapshot', 'sha-']):
+                                        if tag != info['current_version'] and tag != 'latest' and tag != 'main':
+                                            images[service_name]['latest_version'] = tag
+                                            break
+                                if images[service_name]['latest_version']:
+                                    break
+                
+                elif registry_type == 'dockerhub':
+                    # Docker Hub API - handle both official and user images
+                    clean_name = image_name.replace('docker.io/', '').replace('registry.hub.docker.com/', '')
+                    
+                    if '/' in clean_name:
+                        # User/org image
+                        namespace, repo = clean_name.split('/', 1)
+                        api_url = f"https://hub.docker.com/v2/repositories/{namespace}/{repo}/tags"
+                    else:
+                        # Official image (library)
+                        api_url = f"https://hub.docker.com/v2/repositories/library/{clean_name}/tags"
+                    
+                    response = requests.get(api_url, params={'page_size': 50}, timeout=5)
+                    
+                    if response.status_code == 200:
+                        data = response.json()
+                        tags = data.get('results', [])
+                        
+                        # Find latest non-pre-release tag
+                        for tag_info in tags:
+                            tag_name = tag_info.get('name', '')
+                            # Skip pre-release tags and non-semantic tags
+                            if not any(pre in tag_name.lower() for pre in ['alpha', 'beta', 'rc', 'dev', 'nightly', 'snapshot']):
+                                if tag_name != info['current_version'] and tag_name != 'latest':
+                                    images[service_name]['latest_version'] = tag_name
+                                    break
+            
+            except Exception as e:
+                # Silently continue on errors for individual images
+                pass
+    
+    # Output results
+    if format == 'json':
+        click.echo(json.dumps(images, indent=2))
+    elif format == 'list':
+        click.echo(f"\n📋 Docker Images ({len(images)} found):")
+        for service_name, info in images.items():
+            click.echo(f"\n  • Service: {service_name}")
+            click.echo(f"    Image: {info['image']}")
+            click.echo(f"    Source: {info['source']}")
+            if check_updates and info.get('latest_version'):
+                click.echo(f"    Latest: {info['latest_version']}")
+    else:  # table format
+        click.echo(f"\n📋 Docker Images ({len(images)} found):")
+        click.echo("=" * 100)
+        
+        if check_updates:
+            click.echo(f"{'Service':<20} {'Current Version':<20} {'Latest Version':<20} {'Update Available':<15}")
+            click.echo("-" * 100)
+            
+            for service_name, info in images.items():
+                current = info.get('current_version') or 'N/A'
+                latest = info.get('latest_version') or 'N/A'
+                
+                # Determine if update is available
+                update_status = ''
+                if check_updates and latest and latest != 'N/A':
+                    if current != latest and latest != current:
+                        update_status = '✅ Yes'
+                    else:
+                        update_status = '✓ Up to date'
+                
+                click.echo(f"{service_name:<20} {current:<20} {latest:<20} {update_status:<15}")
+        else:
+            click.echo(f"{'Service':<20} {'Image':<40} {'Version':<20} {'Source'}")
+            click.echo("-" * 100)
+            
+            for service_name, info in images.items():
+                image_name = info['image_name']
+                version = info.get('current_version', 'N/A')
+                source = info['source']
+                
+                click.echo(f"{service_name:<20} {image_name:<40} {version:<20} {source}")
+    
+    # Save tracking data to file
+    tracking_file = '.docker-versions.json'
+    try:
+        tracking_data = {
+            'last_checked': datetime.now(datetime.UTC).isoformat() if hasattr(datetime, 'UTC') else datetime.utcnow().isoformat(),
+            'images': images
+        }
+        with open(tracking_file, 'w') as f:
+            json.dump(tracking_data, f, indent=2)
+        
+        click.echo(f"\n💾 Version data saved to {tracking_file}")
+    except Exception as e:
+        click.echo(f"⚠️  Failed to save tracking data: {e}", err=True)
+    
+    if check_updates:
+        click.echo("\n💡 Use 'docker-compose pull' to update images")
+    else:
+        click.echo("\n💡 Use --check-updates to check for available updates")
+
+@docker.command('update-image')
+@click.argument('service')
+@click.option('--version', '-v', help='Specific version to update to (default: latest)')
+def update_image(service, version):
+    """Update a specific service's Docker image."""
+    import yaml
+    import os
+    from datetime import datetime
+    
+    click.echo(f"🔄 Updating image for service '{service}'...")
+    
+    # Find the service in compose files
+    compose_files = ['docker-compose.yml', 'docker-compose.mcp.yml']
+    service_found = False
+    
+    for compose_file in compose_files:
+        if not os.path.exists(compose_file):
+            continue
+        
+        try:
+            with open(compose_file, 'r') as f:
+                compose_data = yaml.safe_load(f)
+            
+            if 'services' in compose_data and service in compose_data['services']:
+                service_found = True
+                service_config = compose_data['services'][service]
+                
+                if 'image' not in service_config:
+                    click.echo(f"❌ Service '{service}' does not have an image defined", err=True)
+                    return
+                
+                current_image = service_config['image']
+                
+                # Parse and update image version
+                if ':' in current_image:
+                    image_name = current_image.rsplit(':', 1)[0]
+                else:
+                    image_name = current_image
+                
+                new_version = version if version else 'latest'
+                new_image = f"{image_name}:{new_version}"
+                
+                click.echo(f"📦 Current image: {current_image}")
+                click.echo(f"📦 New image: {new_image}")
+                
+                if not click.confirm("\n⚠️  Proceed with update?"):
+                    click.echo("✅ Update cancelled")
+                    return
+                
+                # Update the compose file
+                compose_data['services'][service]['image'] = new_image
+                
+                # Create backup
+                backup_file = f"{compose_file}.backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                import shutil
+                shutil.copy2(compose_file, backup_file)
+                click.echo(f"💾 Backup created: {backup_file}")
+                
+                # Write updated compose file
+                with open(compose_file, 'w') as f:
+                    yaml.dump(compose_data, f, default_flow_style=False, sort_keys=False, indent=2)
+                
+                click.echo(f"✅ Updated {compose_file}")
+                
+                # Pull the new image
+                if click.confirm("\n📥 Pull the new image now?"):
+                    try:
+                        subprocess.run(['docker-compose', '-f', compose_file, 'pull', service], check=True)
+                        click.echo(f"✅ Successfully pulled {new_image}")
+                        
+                        # Ask to restart service
+                        if click.confirm("\n🔄 Restart the service now?"):
+                            subprocess.run(['docker-compose', '-f', compose_file, 'up', '-d', service], check=True)
+                            click.echo(f"✅ Service '{service}' restarted with new image")
+                    except subprocess.CalledProcessError as e:
+                        click.echo(f"❌ Failed to pull or restart: {e}", err=True)
+                
+                break
+        
+        except Exception as e:
+            click.echo(f"❌ Failed to update {compose_file}: {e}", err=True)
+            return
+    
+    if not service_found:
+        click.echo(f"❌ Service '{service}' not found in any compose file", err=True)
+        sys.exit(1)
+
+@cli.group()
+@click.pass_context
+def ollama(ctx):
+    """Manage Ollama LLM server (local or remote)."""
+    import os
+    from ai_dev_local.ollama_connection import OllamaConnection
+    
+    # Initialize connection and store in context
+    mode = os.getenv('OLLAMA_CONNECTION_MODE', 'auto')
+    api_url = os.getenv('OLLAMA_API_URL')
+    ctx.ensure_object(dict)
+    ctx.obj['ollama_connection'] = OllamaConnection(mode=mode, api_url=api_url)
 
 @ollama.command()
 @click.option('--models', help='Comma-separated list of models to pull (e.g., llama2:7b,codellama:7b)')
-def init(models):
+@click.pass_context
+def init(ctx, models):
     """Initialize Ollama with common models."""
-    click.echo("🚀 Initializing Ollama...")
+    import os
+    from ai_dev_local.ollama_connection import OllamaMode
     
-    # Check if Ollama service is running
-    try:
-        result = subprocess.run(['docker-compose', 'ps', 'ollama'], 
-                              capture_output=True, text=True, check=True)
-        if 'Up' not in result.stdout:
-            click.echo("❌ Ollama service is not running. Start it first with: ai-dev-local start --ollama")
-            sys.exit(1)
-    except subprocess.CalledProcessError:
-        click.echo("❌ Failed to check Ollama status")
+    conn = ctx.obj['ollama_connection']
+    click.echo(f"🚀 Initializing Ollama ({conn.mode.value} mode)...")
+    
+    # Check if Ollama is available
+    if not conn.is_available():
+        click.echo(f"❌ Ollama not available in {conn.mode.value} mode", err=True)
+        if conn.mode == OllamaMode.DOCKER:
+            click.echo("💡 Start it with: ai-dev-local start --ollama")
         sys.exit(1)
     
     # Get models to pull
     if models:
         model_list = models.split(',')
     else:
-        import os
-        model_list = os.getenv('OLLAMA_AUTO_PULL_MODELS', 'llama2:7b,codellama:7b,mistral:7b,phi:2.7b').split(',')
+        model_list = os.getenv('OLLAMA_AUTO_PULL_MODELS', 'phi:2.7b').split(',')
     
     click.echo(f"📥 Pulling models: {', '.join(model_list)}")
     
@@ -673,8 +978,7 @@ def init(models):
         model = model.strip()
         click.echo(f"  • Pulling {model}...")
         try:
-            subprocess.run(['docker-compose', 'exec', 'ollama', 'ollama', 'pull', model], 
-                         check=True)
+            conn.execute(['pull', model])
             click.echo(f"  ✅ Successfully pulled {model}")
         except subprocess.CalledProcessError:
             click.echo(f"  ❌ Failed to pull {model}")
@@ -682,36 +986,80 @@ def init(models):
     click.echo("🎉 Ollama initialization complete!")
 
 @ollama.command()
-def models():
-    """List available Ollama models."""
+@click.pass_context
+def ps(ctx):
+    """Show currently active/loaded Ollama models."""
+    conn = ctx.obj['ollama_connection']
+    click.echo(f"🔍 Active Ollama models ({conn.mode.value} mode):")
+    
+    if not conn.is_available():
+        click.echo(f"❌ Ollama not available in {conn.mode.value} mode", err=True)
+        sys.exit(1)
+    
     try:
-        result = subprocess.run(['docker-compose', 'exec', 'ollama', 'ollama', 'list'], 
-                              check=True)
+        result = conn.execute(['ps'])
+        output = result.stdout.strip()
+        if not output or 'NAME' in output and len(output.split('\n')) == 1:
+            click.echo("ℹ️  No models currently loaded in memory")
+            click.echo("💡 Models will load automatically when first used")
+        else:
+            click.echo(output)
     except subprocess.CalledProcessError:
-        click.echo("❌ Failed to list models. Make sure Ollama is running.", err=True)
+        click.echo("❌ Failed to check active models", err=True)
+        sys.exit(1)
+
+@ollama.command()
+@click.pass_context
+def models(ctx):
+    """List all downloaded Ollama models."""
+    conn = ctx.obj['ollama_connection']
+    click.echo(f"📦 Downloaded Ollama models ({conn.mode.value} mode):")
+    
+    if not conn.is_available():
+        click.echo(f"❌ Ollama not available in {conn.mode.value} mode", err=True)
+        sys.exit(1)
+    
+    try:
+        result = conn.execute(['list'])
+        click.echo(result.stdout)
+    except subprocess.CalledProcessError:
+        click.echo("❌ Failed to list models", err=True)
         sys.exit(1)
 
 @ollama.command()
 @click.argument('model')
-def pull(model):
+@click.pass_context
+def pull(ctx, model):
     """Pull a specific Ollama model."""
-    click.echo(f"📥 Pulling model: {model}")
+    conn = ctx.obj['ollama_connection']
+    click.echo(f"📥 Pulling model: {model} ({conn.mode.value} mode)")
+    
+    if not conn.is_available():
+        click.echo(f"❌ Ollama not available in {conn.mode.value} mode", err=True)
+        sys.exit(1)
+    
     try:
-        subprocess.run(['docker-compose', 'exec', 'ollama', 'ollama', 'pull', model], 
-                     check=True)
+        result = conn.execute(['pull', model])
+        click.echo(result.stdout)
         click.echo(f"✅ Successfully pulled {model}")
-    except subprocess.CalledProcessError:
-        click.echo(f"❌ Failed to pull {model}", err=True)
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to pull {model}: {e}", err=True)
         sys.exit(1)
 
 @ollama.command()
 @click.argument('model')
-def remove(model):
+@click.pass_context
+def remove(ctx, model):
     """Remove a specific Ollama model."""
-    click.echo(f"🗑️  Removing model: {model}")
+    conn = ctx.obj['ollama_connection']
+    click.echo(f"🗑️  Removing model: {model} ({conn.mode.value} mode)")
+    
+    if not conn.is_available():
+        click.echo(f"❌ Ollama not available in {conn.mode.value} mode", err=True)
+        sys.exit(1)
+    
     try:
-        subprocess.run(['docker-compose', 'exec', 'ollama', 'ollama', 'rm', model], 
-                     check=True)
+        result = conn.execute(['rm', model])
         click.echo(f"✅ Successfully removed {model}")
     except subprocess.CalledProcessError:
         click.echo(f"❌ Failed to remove {model}", err=True)
@@ -720,30 +1068,28 @@ def remove(model):
 @ollama.command('sync-litellm')
 @click.option('--dry-run', is_flag=True, help='Show what would be changed without making modifications')
 @click.option('--backup', is_flag=True, default=True, help='Create backup of existing config (default: true)')
-def sync_litellm(dry_run, backup):
+@click.pass_context
+def sync_litellm(ctx, dry_run, backup):
     """Sync LiteLLM configuration with currently available Ollama models."""
     import os
     import yaml
     import shutil
     from datetime import datetime
+    from ai_dev_local.ollama_connection import OllamaMode
     
-    click.echo("🔄 Syncing LiteLLM configuration with Ollama models...")
+    conn = ctx.obj['ollama_connection']
+    click.echo(f"🔄 Syncing LiteLLM configuration with Ollama models ({conn.mode.value} mode)...")
     
-    # Check if Ollama service is running
-    try:
-        result = subprocess.run(['docker-compose', 'ps', 'ollama'], 
-                              capture_output=True, text=True, check=True)
-        if 'Up' not in result.stdout:
-            click.echo("❌ Ollama service is not running. Start it first with: ai-dev-local start --ollama")
-            sys.exit(1)
-    except subprocess.CalledProcessError:
-        click.echo("❌ Failed to check Ollama status")
+    # Check if Ollama is available
+    if not conn.is_available():
+        click.echo(f"❌ Ollama not available in {conn.mode.value} mode", err=True)
+        if conn.mode == OllamaMode.DOCKER:
+            click.echo("💡 Start it with: ai-dev-local start --ollama")
         sys.exit(1)
     
     # Get currently installed Ollama models
     try:
-        result = subprocess.run(['docker-compose', 'exec', '-T', 'ollama', 'ollama', 'list'], 
-                              capture_output=True, text=True, check=True)
+        result = conn.execute(['list'])
         ollama_output = result.stdout.strip()
         
         # Parse ollama list output to extract model names
@@ -805,16 +1151,31 @@ def sync_litellm(dry_run, backup):
     click.echo(f"🔍 Found {len(existing_ollama_models)} existing Ollama models in LiteLLM config")
     
     # Create new Ollama model configurations
+    # Determine the correct API base URL based on connection mode
+    api_base = conn.get_api_url()
+    
+    # For Docker LiteLLM connecting to different Ollama modes
+    if conn.mode == OllamaMode.DOCKER:
+        # LiteLLM in Docker connecting to Ollama in Docker
+        litellm_api_base = 'http://ollama:11434'
+    elif conn.mode == OllamaMode.NATIVE or conn.mode == OllamaMode.REMOTE:
+        # LiteLLM in Docker connecting to host or remote Ollama
+        litellm_api_base = api_base.replace('localhost', 'host.docker.internal')
+    else:
+        litellm_api_base = api_base
+    
     new_ollama_models = []
     for model in ollama_models:
         model_config = {
             'model_name': model['name'],
             'litellm_params': {
                 'model': f"ollama/{model['full_name']}",
-                'api_base': 'http://host.docker.internal:11434'
+                'api_base': litellm_api_base
             }
         }
         new_ollama_models.append(model_config)
+    
+    click.echo(f"🔗 Using Ollama API base for LiteLLM: {litellm_api_base}")
     
     # Update config with new Ollama models
     updated_config = config.copy()
@@ -863,6 +1224,218 @@ def sync_litellm(dry_run, backup):
     except Exception as e:
         click.echo(f"❌ Failed to write updated config: {e}")
         sys.exit(1)
+
+@ollama.group()
+def config():
+    """Configure Ollama connection settings."""
+    pass
+
+@config.command()
+def show():
+    """Show current Ollama connection configuration."""
+    import os
+    from ai_dev_local.ollama_connection import OllamaConnection, OllamaMode
+    
+    mode = os.getenv('OLLAMA_CONNECTION_MODE', 'auto')
+    api_url = os.getenv('OLLAMA_API_URL', 'http://localhost:11434')
+    
+    conn = OllamaConnection(mode=mode, api_url=api_url)
+    
+    click.echo("🔧 Ollama Connection Configuration:")
+    click.echo("=" * 50)
+    click.echo(f"  Mode: {conn.mode.value}")
+    click.echo(f"  API URL: {conn.api_url}")
+    click.echo(f"  Available: {'✅ Yes' if conn.is_available() else '❌ No'}")
+    
+    if conn.mode == OllamaMode.DOCKER:
+        click.echo(f"  Docker Service: {conn.docker_service}")
+        click.echo(f"  Compose File: {conn.docker_compose_file}")
+    
+    click.echo("\n💡 Configuration from .env file:")
+    click.echo(f"  OLLAMA_CONNECTION_MODE={mode}")
+    click.echo(f"  OLLAMA_API_URL={api_url}")
+
+@config.command('set-mode')
+@click.argument('mode', type=click.Choice(['auto', 'docker', 'native', 'remote']))
+def set_mode(mode):
+    """Set Ollama connection mode."""
+    import os
+    import re
+    
+    env_file = '.env'
+    
+    if not os.path.exists(env_file):
+        click.echo("❌ .env file not found", err=True)
+        sys.exit(1)
+    
+    try:
+        # Read current .env file
+        with open(env_file, 'r') as f:
+            content = f.read()
+        
+        lines = content.split('\n')
+        updated_lines = []
+        key_found = False
+        
+        # Process each line to find and update the key
+        for line in lines:
+            if re.match(r'^\s*OLLAMA_CONNECTION_MODE\s*=', line):
+                updated_lines.append(f"OLLAMA_CONNECTION_MODE={mode}")
+                key_found = True
+            else:
+                updated_lines.append(line)
+        
+        # If key not found, add it
+        if not key_found:
+            # Find Ollama section and add it there
+            for i, line in enumerate(updated_lines):
+                if 'CLI Connection Mode' in line or 'OLLAMA_CONNECTION_MODE' in line:
+                    updated_lines.insert(i + 1, f"OLLAMA_CONNECTION_MODE={mode}")
+                    key_found = True
+                    break
+            
+            # If still not found, add at end
+            if not key_found:
+                updated_lines.extend(['', f'OLLAMA_CONNECTION_MODE={mode}'])
+        
+        # Write back to file
+        with open(env_file, 'w') as f:
+            f.write('\n'.join(updated_lines))
+        
+        click.echo(f"✅ Set OLLAMA_CONNECTION_MODE to: {mode}")
+        click.echo("💡 Changes will take effect on next command")
+        
+    except Exception as e:
+        click.echo(f"❌ Failed to update .env file: {e}", err=True)
+        sys.exit(1)
+
+@config.command('set-url')
+@click.argument('url')
+def set_url(url):
+    """Set Ollama API URL for remote/custom mode."""
+    import os
+    import re
+    
+    env_file = '.env'
+    
+    if not os.path.exists(env_file):
+        click.echo("❌ .env file not found", err=True)
+        sys.exit(1)
+    
+    try:
+        # Read current .env file
+        with open(env_file, 'r') as f:
+            content = f.read()
+        
+        lines = content.split('\n')
+        updated_lines = []
+        key_found = False
+        
+        # Process each line to find and update the key
+        for line in lines:
+            if re.match(r'^\s*OLLAMA_API_URL\s*=', line):
+                updated_lines.append(f"OLLAMA_API_URL={url}")
+                key_found = True
+            else:
+                updated_lines.append(line)
+        
+        # If key not found, add it
+        if not key_found:
+            # Find Ollama section and add it there
+            for i, line in enumerate(updated_lines):
+                if 'API URL' in line or 'OLLAMA_API_URL' in line:
+                    updated_lines.insert(i + 1, f"OLLAMA_API_URL={url}")
+                    key_found = True
+                    break
+            
+            # If still not found, add at end
+            if not key_found:
+                updated_lines.extend(['', f'OLLAMA_API_URL={url}'])
+        
+        # Write back to file
+        with open(env_file, 'w') as f:
+            f.write('\n'.join(updated_lines))
+        
+        click.echo(f"✅ Set OLLAMA_API_URL to: {url}")
+        click.echo("💡 Changes will take effect on next command")
+        
+    except Exception as e:
+        click.echo(f"❌ Failed to update .env file: {e}", err=True)
+        sys.exit(1)
+
+@config.command()
+def test():
+    """Test Ollama connection in all modes."""
+    import os
+    from ai_dev_local.ollama_connection import OllamaConnection
+    
+    click.echo("🔍 Testing Ollama connection...\n")
+    
+    # Test Docker
+    click.echo("Docker Mode:")
+    try:
+        conn = OllamaConnection(mode='docker')
+        if conn.is_available():
+            click.echo("  ✅ Docker Ollama is running")
+            try:
+                result = conn.execute(['list'], check=False)
+                if result.returncode == 0:
+                    model_count = len(result.stdout.strip().split('\n')) - 1  # Subtract header
+                    click.echo(f"     {model_count} models available")
+            except:
+                pass
+        else:
+            click.echo("  ❌ Docker Ollama not available")
+            click.echo("     💡 Start with: ai-dev-local start --ollama")
+    except Exception as e:
+        click.echo(f"  ❌ Docker connection failed: {e}")
+    
+    # Test Native
+    click.echo("\nNative Mode:")
+    try:
+        conn = OllamaConnection(mode='native')
+        if conn.is_available():
+            try:
+                result = subprocess.run(['ollama', '--version'], 
+                                      capture_output=True, text=True, check=True)
+                click.echo(f"  ✅ Native Ollama found: {result.stdout.strip()}")
+                try:
+                    result = conn.execute(['list'], check=False)
+                    if result.returncode == 0:
+                        model_count = len(result.stdout.strip().split('\n')) - 1
+                        click.echo(f"     {model_count} models available")
+                except:
+                    pass
+            except:
+                click.echo("  ✅ Native Ollama found")
+        else:
+            click.echo("  ❌ Native Ollama not available")
+            click.echo("     💡 Install with: brew install ollama")
+    except Exception as e:
+        click.echo(f"  ❌ Native connection failed: {e}")
+    
+    # Test Remote
+    click.echo("\nRemote Mode:")
+    api_url = os.getenv('OLLAMA_API_URL', 'http://localhost:11434')
+    try:
+        conn = OllamaConnection(mode='remote', api_url=api_url)
+        if conn.is_available():
+            click.echo(f"  ✅ Remote Ollama accessible at {api_url}")
+            try:
+                result = conn.execute(['list'], check=False)
+                if result.returncode == 0:
+                    model_count = len(result.stdout.strip().split('\n')) - 1
+                    click.echo(f"     {model_count} models available")
+            except:
+                pass
+        else:
+            click.echo(f"  ❌ Remote Ollama not accessible at {api_url}")
+            click.echo(f"     💡 Check URL or start Ollama server")
+    except Exception as e:
+        click.echo(f"  ❌ Remote connection failed: {e}")
+    
+    click.echo("\n💡 Use 'ai-dev-local ollama config show' to see current settings")
+    click.echo("💡 Use 'ai-dev-local ollama config set-mode <mode>' to change mode")
 
 @ollama.command('list-available')
 @click.option('--search', '-s', help='Search for models containing this term')

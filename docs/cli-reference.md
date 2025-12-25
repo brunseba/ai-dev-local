@@ -408,7 +408,15 @@ ai-dev-local config edit
 
 ### `ai-dev-local ollama`
 
-Manage Ollama local LLM server and models.
+Manage Ollama LLM server (local or remote) and models.
+
+**Connection Modes:**
+- **Docker**: Uses Docker Compose service (default)
+- **Native**: Uses system-installed Ollama
+- **Remote**: Uses remote Ollama server
+- **Auto**: Automatically detects available Ollama
+
+See [Ollama External Setup Guide](ollama-external-setup.md) for detailed configuration.
 
 #### `ai-dev-local ollama init [--models MODELS]`
 
@@ -514,17 +522,145 @@ ai-dev-local ollama sync-litellm --no-backup
 - `--backup / --no-backup`: Create backup of existing config (default: backup enabled)
 
 **Prerequisites:**
-- Ollama service must be running (`ai-dev-local start --ollama`)
+- Ollama must be available in any connection mode (docker/native/remote)
 - Ollama models must be installed (`ai-dev-local ollama init` or `ai-dev-local ollama pull <model>`)
 
 **Features:**
+- Works with all Ollama connection modes (docker/native/remote)
 - Automatically detects all installed Ollama models
 - Updates LiteLLM configuration with current models
+- Intelligently sets API base URL based on connection mode:
+  - Docker mode: Uses `http://ollama:11434` (Docker network)
+  - Native/Remote mode: Uses `http://host.docker.internal:11434` (host access)
 - Removes outdated Ollama model entries
 - Creates timestamped backup before changes
 - Updates router group aliases for model routing
 - Preserves all non-Ollama model configurations
 - Provides detailed change summary before applying
+
+**Note:** The command displays the connection mode being used (e.g., "docker mode", "remote mode")
+
+#### `ai-dev-local ollama ps`
+
+Show currently active/loaded Ollama models in memory.
+
+```bash
+ai-dev-local ollama ps
+```
+
+**Example output:**
+```
+🔍 Active Ollama models (docker mode):
+NAME                ID              SIZE      PROCESSOR      UNTIL
+llama3:8b          365c0bd3c000    4.7 GB    100% GPU       4 minutes from now
+```
+
+#### `ai-dev-local ollama config`
+
+Configure Ollama connection settings for external server support.
+
+##### `ai-dev-local ollama config show`
+
+Display current Ollama connection configuration.
+
+```bash
+ai-dev-local ollama config show
+```
+
+**Example output:**
+```
+🔧 Ollama Connection Configuration:
+==================================================
+  Mode: docker
+  API URL: http://localhost:11434
+  Available: ✅ Yes
+  Docker Service: ollama
+  Compose File: docker-compose.yml
+
+💡 Configuration from .env file:
+  OLLAMA_CONNECTION_MODE=auto
+  OLLAMA_API_URL=http://localhost:11434
+```
+
+##### `ai-dev-local ollama config set-mode <MODE>`
+
+Set the Ollama connection mode.
+
+```bash
+# Use auto-detection (default)
+ai-dev-local ollama config set-mode auto
+
+# Use Docker Compose service
+ai-dev-local ollama config set-mode docker
+
+# Use system-installed Ollama
+ai-dev-local ollama config set-mode native
+
+# Use remote Ollama server
+ai-dev-local ollama config set-mode remote
+```
+
+**Available Modes:**
+- `auto`: Automatically detects available Ollama (Docker → Native → Remote)
+- `docker`: Uses Docker Compose Ollama service
+- `native`: Uses system-installed Ollama (brew/apt)
+- `remote`: Uses remote Ollama server
+
+**Changes take effect immediately on next command.**
+
+##### `ai-dev-local ollama config set-url <URL>`
+
+Set the API URL for remote or native Ollama connections.
+
+```bash
+# Set remote server URL
+ai-dev-local ollama config set-url http://ollama-server:11434
+
+# Set custom port
+ai-dev-local ollama config set-url http://localhost:12345
+
+# Use IP address
+ai-dev-local ollama config set-url http://192.168.1.100:11434
+```
+
+**When to use:**
+- Connecting to remote Ollama server
+- Custom port configurations
+- Team shared Ollama instance
+
+##### `ai-dev-local ollama config test`
+
+Test Ollama connection in all available modes.
+
+```bash
+ai-dev-local ollama config test
+```
+
+**Example output:**
+```
+🔍 Testing Ollama connection...
+
+Docker Mode:
+  ✅ Docker Ollama is running
+     5 models available
+
+Native Mode:
+  ❌ Native Ollama not available
+     💡 Install with: brew install ollama
+
+Remote Mode:
+  ✅ Remote Ollama accessible at http://localhost:11434
+     5 models available
+
+💡 Use 'ai-dev-local ollama config show' to see current settings
+💡 Use 'ai-dev-local ollama config set-mode <mode>' to change mode
+```
+
+**Use cases:**
+- Verify Ollama installation
+- Troubleshoot connection issues
+- Check which modes are available
+- Validate remote server access
 
 ## Service URLs
 
