@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ai-dev-local"
-version = "0.2.1"
+version = "0.3.0"
 description = "A comprehensive AI lab for local development with various AI services and Model Context Protocol (MCP) integrations"
 authors = [
     {name = "Sebastien Brun", email = "brun_s@example.com"}

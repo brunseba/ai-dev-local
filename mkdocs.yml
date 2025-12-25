@@ -55,7 +55,9 @@ nav:
     - FlowiseAI: services/flowiseai.md
     - Open WebUI: services/open-webui.md
     - LiteLLM Proxy: services/litellm.md
+    - Vector Store: VECTOR_STORE.md
     - Ollama: services/ollama.md
+    - Ollama External Setup: ollama-external-setup.md
   - MCP Services:
     - Deployment Guide: mcp/deployment.md
     - PostgreSQL MCP: mcp/postgresql.md
@@ -63,8 +65,9 @@ nav:
     - GitHub MCP: mcp/github.md
     - SonarQube MCP: mcp/sonarqube.md
   - CLI Reference: cli-reference.md
+  - Docker Management: DOCKER_VERSION_TRACKING.md
   - Development: development.md
-  - Changelog: changelog.md
+  - Changelog: ../CHANGELOG.md
 
 plugins:
   - search
