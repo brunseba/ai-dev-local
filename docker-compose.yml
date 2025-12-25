@@ -1,7 +1,7 @@
 services:
   # Database services
   postgres:
-    image: postgres:15
+    image: pgvector/pgvector:pg17
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -75,7 +75,7 @@ services:
 
   # FlowiseAI - Visual AI workflow builder
   flowise:
-    image: flowiseai/flowise:latest
+    image: flowiseai/flowise:2.2.3
     restart: unless-stopped
     depends_on:
       postgres:
@@ -152,6 +152,12 @@ services:
       DEPLOY_TIMEOUT: ${DEPLOY_TIMEOUT:-120000}
       MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-50mb}
       
+      # OpenAI Configuration (via LiteLLM Proxy)
+      # Use LiteLLM master key for all OpenAI API calls through the proxy
+      # Note: Node-level configuration in Flowise UI takes precedence over these env vars
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY}
+      OPENAI_API_BASE: http://litellm:4000/v1
+      
     volumes:
       - flowise_data:/root/.flowise
       - ./configs/flowise:/root/.flowise/config:ro  # Read-only config mount
@@ -171,14 +177,14 @@ services:
 
   # Open WebUI - Chat interface for LLMs
   open-webui:
-    image: ghcr.io/open-webui/open-webui:main
+    image: ghcr.io/open-webui/open-webui:main 
     restart: unless-stopped
     ports:
       - "${OPENWEBUI_PORT:-8081}:8080"
     environment:
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       OPENAI_API_BASE_URL: ${OPENAI_API_BASE_URL:-http://litellm:4000/v1}
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-sk-1234567890abcdef}
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-*******************}
       WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-t0p-s3cr3t}
       WEBUI_JWT_SECRET_KEY: ${WEBUI_JWT_SECRET_KEY:-jwt-s3cr3t}
       DEFAULT_MODELS: ${DEFAULT_MODELS:-gpt-3.5-turbo,gpt-4}
@@ -202,7 +208,7 @@ services:
 
   # LiteLLM Proxy - Unified API for multiple LLM providers
   litellm:
-    image: ghcr.io/berriai/litellm:main-latest
+    image: docker.litellm.ai/berriai/litellm:main-latest 
     restart: unless-stopped
     depends_on:
       postgres:
@@ -256,9 +262,59 @@ services:
       retries: 3
       start_period: 30s
 
+  # LiteLLM PGVector - OpenAI-compatible vector store using pgvector
+  litellm-pgvector:
+    build:
+      context: https://github.com/BerriAI/litellm-pgvector.git
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      litellm:
+        condition: service_healthy
+    ports:
+      - "${VECTOR_STORE_PORT:-8000}:8000"
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/vectordb?schema=public
+      
+      # API Configuration
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-*******************}
+      
+      # Server Configuration
+      HOST: 0.0.0.0
+      PORT: 8000
+      
+      # LiteLLM Proxy Configuration
+      EMBEDDING__MODEL: ${EMBEDDING_MODEL:-text-embedding-3-small}
+      EMBEDDING__BASE_URL: http://litellm:4000
+      EMBEDDING__API_KEY: ${VECTOR_STORE_API_KEY:-*******************}
+      EMBEDDING__DIMENSIONS: ${EMBEDDING_DIMENSIONS:-1536}
+      
+      # Database Field Configuration (optional)
+      DB_FIELDS__ID_FIELD: id
+      DB_FIELDS__CONTENT_FIELD: content
+      DB_FIELDS__METADATA_FIELD: metadata
+      DB_FIELDS__EMBEDDING_FIELD: embedding
+      DB_FIELDS__VECTOR_STORE_ID_FIELD: vector_store_id
+      DB_FIELDS__CREATED_AT_FIELD: created_at
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=litellm-pgvector"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   # Ollama - Local LLM server (optional)
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.5.4
     restart: unless-stopped
     ports:
       - "${OLLAMA_PORT:-11434}:11434"
@@ -310,6 +366,7 @@ services:
       OPENWEBUI_URL: http://${HOST:-localhost}:${OPENWEBUI_PORT:-8081}
       LITELLM_URL: http://${HOST:-localhost}:${LITELLM_PORT:-4000}
       OLLAMA_URL: http://${HOST:-localhost}:${OLLAMA_PORT:-11434}
+      VECTOR_STORE_URL: http://${HOST:-localhost}:${VECTOR_STORE_PORT:-8000}
       DASHBOARD_TITLE: ${DASHBOARD_TITLE:-AI Dev Local Dashboard}
       APP_VERSION: ${GIT_TAG:-v0.2.1}
       BUILD_DATE: ${BUILD_DATE:-unknown}
@@ -359,6 +416,7 @@ volumes:
   open_webui_data:
   litellm_data:
   ollama_data:
+  vector_store_data:
 
 networks:
   default:

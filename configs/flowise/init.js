@@ -131,6 +131,26 @@ function configureServer(config) {
 }
 
 /**
+ * Configure API proxy settings
+ */
+function configureApiProxy(config) {
+    if (!config || !config.apiProxy) {
+        return;
+    }
+
+    const proxy = config.apiProxy;
+    if (proxy.enabled && proxy.openai) {
+        console.log('Configuring OpenAI API proxy...');
+        console.log(`- Base URL: ${proxy.openai.baseUrl}`);
+        
+        // Only set if environment variable exists
+        if (proxy.openai.useEnvKey && proxy.openai.keyEnvVar) {
+            console.log(`- Using API key from: ${proxy.openai.keyEnvVar}`);
+        }
+    }
+}
+
+/**
  * Main initialization function
  */
 function initialize() {
@@ -152,6 +172,7 @@ function initialize() {
     initializeDatabase(config);
     setupAuthentication(config);
     configureServer(config);
+    configureApiProxy(config);
     setupDefaultCredentials(config);
 
     console.log('');

@@ -9,7 +9,15 @@ CREATE DATABASE flowise;
 -- Create database for LiteLLM
 CREATE DATABASE litellm;
 
+-- Create database for Vector Store
+CREATE DATABASE vectordb;
+
 -- Grant privileges to postgres user
 GRANT ALL PRIVILEGES ON DATABASE langfuse TO postgres;
 GRANT ALL PRIVILEGES ON DATABASE flowise TO postgres;
 GRANT ALL PRIVILEGES ON DATABASE litellm TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE vectordb TO postgres;
+
+-- Connect to vectordb and enable pgvector extension
+\c vectordb;
+CREATE EXTENSION IF NOT EXISTS vector;

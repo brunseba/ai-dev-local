@@ -1,9 +1,9 @@
 services:
   # MCP Git Server - Git repository operations
   mcp-git:
-    image: mcp/git:latest
+    image: mcp/git:0.6.2
     build:
-      context: https://github.com/modelcontextprotocol/servers.git#main
+      context: https://github.com/modelcontextprotocol/servers.git#v0.6.2
       dockerfile: src/git/Dockerfile
     restart: unless-stopped
     volumes:
@@ -33,9 +33,9 @@ services:
 
   # MCP Filesystem Server - Secure file operations
   mcp-filesystem:
-    image: mcp/filesystem:latest
+    image: mcp/filesystem:0.6.2
     build:
-      context: https://github.com/modelcontextprotocol/servers.git#main
+      context: https://github.com/modelcontextprotocol/servers.git#v0.6.2
       dockerfile: src/filesystem/Dockerfile
     restart: unless-stopped
     volumes:
@@ -62,9 +62,9 @@ services:
 
   # MCP Fetch Server - Web content retrieval
   mcp-fetch:
-    image: mcp/fetch:latest
+    image: mcp/fetch:0.6.2
     build:
-      context: https://github.com/modelcontextprotocol/servers.git#main
+      context: https://github.com/modelcontextprotocol/servers.git#v0.6.2
       dockerfile: src/fetch/Dockerfile
     restart: unless-stopped
     environment:
@@ -89,9 +89,9 @@ services:
 
   # MCP Memory Server - Persistent knowledge graph
   mcp-memory:
-    image: mcp/memory:latest
+    image: mcp/memory:0.6.2
     build:
-      context: https://github.com/modelcontextprotocol/servers.git#main
+      context: https://github.com/modelcontextprotocol/servers.git#v0.6.2
       dockerfile: src/memory/Dockerfile
     restart: unless-stopped
     volumes:
@@ -117,9 +117,9 @@ services:
 
   # MCP Time Server - Time and timezone utilities
   mcp-time:
-    image: mcp/time:latest
+    image: mcp/time:0.6.2
     build:
-      context: https://github.com/modelcontextprotocol/servers.git#main
+      context: https://github.com/modelcontextprotocol/servers.git#v0.6.2
       dockerfile: src/time/Dockerfile
     restart: unless-stopped
     environment:
@@ -173,9 +173,9 @@ services:
       start_period: 10s
   # MCP Everything Server - Reference/test server
   mcp-everything:
-    image: mcp/everything:latest
+    image: mcp/everything:0.6.2
     build:
-      context: https://github.com/modelcontextprotocol/servers.git#main
+      context: https://github.com/modelcontextprotocol/servers.git#v0.6.2
       dockerfile: src/everything/Dockerfile
     restart: unless-stopped
     environment:
@@ -258,7 +258,7 @@ services:
   # MCP SonarQube Server - Code quality analysis
   # Official repository: https://hub.docker.com/r/mcp/sonarqube
   mcp-sonarqube:
-    image: mcp/sonarqube:latest
+    image: mcp/sonarqube:1.0.0
     restart: unless-stopped
     environment:
       - SONARQUBE_URL=${SONARQUBE_URL:-http://localhost:9000}

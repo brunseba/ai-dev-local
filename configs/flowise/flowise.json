@@ -60,24 +60,35 @@
     "logLevel": "info"
   },
   
+  "apiProxy": {
+    "enabled": true,
+    "openai": {
+      "baseUrl": "http://litellm:4000/v1",
+      "useEnvKey": true,
+      "keyEnvVar": "LITELLM_MASTER_KEY"
+    }
+  },
+  
   "defaults": {
     "chatflows": [],
     "tools": [],
     "credentials": [
       {
-        "name": "OpenAI API",
+        "name": "OpenAI API (via LiteLLM)",
         "credentialName": "openAIApi",
-        "description": "Default OpenAI API configuration for AI Dev Local",
+        "description": "OpenAI API routed through LiteLLM proxy for unified access",
         "inputs": {
-          "openAIApiKey": ""
+          "openAIApiKey": "${LITELLM_MASTER_KEY}",
+          "basePath": "http://litellm:4000/v1"
         }
       },
       {
-        "name": "Anthropic API",
+        "name": "Anthropic API (via LiteLLM)",
         "credentialName": "anthropicApi", 
-        "description": "Default Anthropic API configuration for AI Dev Local",
+        "description": "Anthropic API routed through LiteLLM proxy for unified access",
         "inputs": {
-          "anthropicApiKey": ""
+          "anthropicApiKey": "${LITELLM_MASTER_KEY}",
+          "basePath": "http://litellm:4000/v1"
         }
       }
     ]

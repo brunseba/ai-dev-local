@@ -163,6 +163,8 @@ logs/
 # Docker
 .dockerignore
 docker-compose.override.yml
+.docker-versions.json
+docker-compose*.backup_*
 
 # UV package manager
 .uv/
