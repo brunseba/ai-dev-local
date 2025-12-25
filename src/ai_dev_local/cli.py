@@ -1573,5 +1573,200 @@ def list_available(search, category, format):
         sys.exit(1)
 
 
+@cli.group()
+def langflow():
+    """Manage Langflow AI agent builder service."""
+    pass
+
+@langflow.command()
+def status():
+    """Check Langflow service status."""
+    import subprocess
+    click.echo("📊 Langflow Service Status:")
+    try:
+        # Use simple ps format
+        result = subprocess.run(
+            ['docker', 'compose', 'ps', 'langflow'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        
+        if result.stdout and (' Up ' in result.stdout or 'running' in result.stdout.lower()):
+            click.echo(f"  ✅ Service: langflow")
+            click.echo(f"  📍 State: running")
+            click.echo(f"\n🌐 Access Langflow:")
+            click.echo(f"  http://localhost:7860")
+            click.echo(f"  Login: admin / admin123")
+        elif result.stdout.strip():
+            click.echo(f"  ⚠️ Service: langflow")
+            click.echo(f"  📍 State: stopped or starting")
+        else:
+            click.echo("  ℹ️ Langflow service is not running")
+            
+    except subprocess.CalledProcessError:
+        click.echo("  ❌ Failed to get status")
+    except Exception as e:
+        click.echo(f"  ❌ Error: {e}")
+
+@langflow.command()
+def start():
+    """Start Langflow service."""
+    import subprocess
+    click.echo("🚀 Starting Langflow...")
+    try:
+        subprocess.run(
+            ['docker', 'compose', 'up', '-d', 'langflow'],
+            check=True
+        )
+        click.echo("✅ Langflow started successfully!")
+        click.echo("\n🌐 Access at: http://localhost:7860")
+        click.echo("📝 Login: admin / admin123")
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to start Langflow: {e}", err=True)
+        sys.exit(1)
+
+@langflow.command()
+def stop():
+    """Stop Langflow service."""
+    import subprocess
+    click.echo("🛑 Stopping Langflow...")
+    try:
+        subprocess.run(
+            ['docker', 'compose', 'stop', 'langflow'],
+            check=True
+        )
+        click.echo("✅ Langflow stopped")
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to stop Langflow: {e}", err=True)
+        sys.exit(1)
+
+@langflow.command()
+def restart():
+    """Restart Langflow service."""
+    import subprocess
+    click.echo("🔄 Restarting Langflow...")
+    try:
+        subprocess.run(
+            ['docker', 'compose', 'restart', 'langflow'],
+            check=True
+        )
+        click.echo("✅ Langflow restarted successfully!")
+        click.echo("\n🌐 Access at: http://localhost:7860")
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to restart Langflow: {e}", err=True)
+        sys.exit(1)
+
+@langflow.command()
+@click.option('--tail', '-n', default=50, help='Number of log lines to show')
+@click.option('--follow', '-f', is_flag=True, help='Follow log output')
+def logs(tail, follow):
+    """View Langflow service logs."""
+    import subprocess
+    click.echo(f"📜 Langflow Logs (last {tail} lines):")
+    try:
+        cmd = ['docker', 'compose', 'logs', '--tail', str(tail)]
+        if follow:
+            cmd.append('--follow')
+        cmd.append('langflow')
+        
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        click.echo(f"❌ Failed to get logs: {e}", err=True)
+        sys.exit(1)
+    except KeyboardInterrupt:
+        click.echo("\n✅ Stopped following logs")
+
+@langflow.command()
+def version():
+    """Show Langflow version."""
+    import subprocess
+    import requests
+    
+    click.echo("🔍 Checking Langflow version...")
+    try:
+        # Try to get version from API
+        response = requests.get('http://localhost:7860/api/v1/version', timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            click.echo(f"\n✅ Langflow Version: {data.get('version', 'unknown')}")
+            click.echo(f"📦 Package: {data.get('package', 'Langflow')}")
+        else:
+            click.echo("⚠️ Langflow API not accessible")
+            # Fallback to docker image
+            _show_image_version()
+    except requests.RequestException:
+        click.echo("⚠️ Langflow not running or not accessible")
+        _show_image_version()
+    except Exception as e:
+        click.echo(f"❌ Error: {e}", err=True)
+
+def _show_image_version():
+    """Show Docker image version as fallback."""
+    import subprocess
+    try:
+        result = subprocess.run(
+            ['docker', 'compose', 'images', 'langflow', '--format', 'json'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        if result.stdout.strip():
+            import json
+            images = json.loads(result.stdout)
+            if images:
+                image = images[0] if isinstance(images, list) else images
+                tag = image.get('Tag', 'unknown')
+                click.echo(f"📦 Docker Image: langflowai/langflow:{tag}")
+    except:
+        pass
+
+@langflow.command()
+def info():
+    """Show Langflow service information and configuration."""
+    import subprocess
+    import os
+    
+    click.echo("ℹ️ Langflow Service Information\n")
+    click.echo("=" * 60)
+    
+    # Service details
+    click.echo("\n📋 Service Details:")
+    click.echo(f"  Name: Langflow")
+    click.echo(f"  Description: Low-code AI agent and workflow builder")
+    click.echo(f"  Port: 7860")
+    click.echo(f"  URL: http://localhost:7860")
+    
+    # Configuration
+    click.echo("\n⚙️ Configuration:")
+    env_vars = {
+        'LANGFLOW_PORT': os.getenv('LANGFLOW_PORT', '7860'),
+        'LANGFLOW_SUPERUSER': os.getenv('LANGFLOW_SUPERUSER', 'admin'),
+        'LANGFLOW_WORKERS': os.getenv('LANGFLOW_WORKERS', '1'),
+        'LANGFLOW_LOG_LEVEL': os.getenv('LANGFLOW_LOG_LEVEL', 'info'),
+    }
+    
+    for key, value in env_vars.items():
+        click.echo(f"  {key}: {value}")
+    
+    # Integration
+    click.echo("\n🔗 Integrations:")
+    click.echo(f"  ✅ PostgreSQL (shared database)")
+    click.echo(f"  ✅ LiteLLM Proxy (unified LLM API)")
+    click.echo(f"  ✅ Langfuse (observability)")
+    
+    # Documentation
+    click.echo("\n📚 Documentation:")
+    click.echo(f"  Official: https://docs.langflow.org/")
+    click.echo(f"  Config: configs/langflow/README.md")
+    
+    # Quick actions
+    click.echo("\n💡 Quick Actions:")
+    click.echo(f"  Start:   ai-dev-local langflow start")
+    click.echo(f"  Stop:    ai-dev-local langflow stop")
+    click.echo(f"  Logs:    ai-dev-local langflow logs")
+    click.echo(f"  Status:  ai-dev-local langflow status")
+
+
 if __name__ == '__main__':
     cli()
