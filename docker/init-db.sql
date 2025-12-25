@@ -6,6 +6,9 @@ CREATE DATABASE langfuse;
 -- Create database for FlowiseAI
 CREATE DATABASE flowise;
 
+-- Create database for Langflow
+CREATE DATABASE langflow;
+
 -- Create database for LiteLLM
 CREATE DATABASE litellm;
 
@@ -15,6 +18,7 @@ CREATE DATABASE vectordb;
 -- Grant privileges to postgres user
 GRANT ALL PRIVILEGES ON DATABASE langfuse TO postgres;
 GRANT ALL PRIVILEGES ON DATABASE flowise TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE langflow TO postgres;
 GRANT ALL PRIVILEGES ON DATABASE litellm TO postgres;
 GRANT ALL PRIVILEGES ON DATABASE vectordb TO postgres;
 

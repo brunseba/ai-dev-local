@@ -39,6 +39,7 @@ get_ollama_models() {
 export DASHBOARD_TITLE="${DASHBOARD_TITLE:-AI Dev Local Dashboard}"
 export LANGFUSE_URL="${LANGFUSE_URL:-http://localhost:3000}"
 export FLOWISE_URL="${FLOWISE_URL:-http://localhost:3001}"
+export LANGFLOW_URL="${LANGFLOW_URL:-http://localhost:7860}"
 export OPENWEBUI_URL="${OPENWEBUI_URL:-http://localhost:8080}"
 export LITELLM_URL="${LITELLM_URL:-http://localhost:4000}"
 export OLLAMA_URL="${OLLAMA_URL:-http://localhost:11434}"

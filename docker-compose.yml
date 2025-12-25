@@ -349,6 +349,59 @@ services:
     #           count: 1
     #           capabilities: [gpu]
 
+  # Langflow - Low-code AI agent and workflow builder
+  langflow:
+    image: langflowai/langflow:latest
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      litellm:
+        condition: service_healthy
+    ports:
+      - "${LANGFLOW_PORT:-7860}:7860"
+    environment:
+      # Database Configuration
+      LANGFLOW_DATABASE_URL: postgresql://postgres:postgres@postgres:5432/langflow
+      
+      # Storage Configuration (use defaults)
+      # Langflow will use ~/.langflow for storage
+      
+      # LiteLLM Integration
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY}
+      OPENAI_API_BASE: http://litellm:4000/v1
+      
+      # Langfuse Integration (observability)
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-}
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-}
+      LANGFUSE_HOST: http://langfuse:3000
+      
+      # Authentication
+      LANGFLOW_SUPERUSER: ${LANGFLOW_SUPERUSER:-admin}
+      LANGFLOW_SUPERUSER_PASSWORD: ${LANGFLOW_SUPERUSER_PASSWORD:-admin123}
+      
+      # Performance & Logging
+      LANGFLOW_WORKERS: ${LANGFLOW_WORKERS:-1}
+      LANGFLOW_LOG_LEVEL: ${LANGFLOW_LOG_LEVEL:-info}
+      LANGFLOW_AUTO_LOGIN: ${LANGFLOW_AUTO_LOGIN:-false}
+      
+      # Feature Flags
+      LANGFLOW_STORE: ${LANGFLOW_STORE:-true}
+    volumes:
+      - langflow_data:/home/user/.langflow
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service=langflow"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7860/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   # AI Dev Dashboard - Single web page to access all services
   dashboard:
     build:
@@ -363,6 +416,7 @@ services:
     environment:
       LANGFUSE_URL: http://${HOST:-localhost}:${LANGFUSE_PORT:-3000}
       FLOWISE_URL: http://${HOST:-localhost}:${FLOWISE_PORT:-3001}
+      LANGFLOW_URL: http://${HOST:-localhost}:${LANGFLOW_PORT:-7860}
       OPENWEBUI_URL: http://${HOST:-localhost}:${OPENWEBUI_PORT:-8081}
       LITELLM_URL: http://${HOST:-localhost}:${LITELLM_PORT:-4000}
       OLLAMA_URL: http://${HOST:-localhost}:${OLLAMA_PORT:-11434}
@@ -413,6 +467,7 @@ volumes:
   redis_data:
   langfuse_data:
   flowise_data:
+  langflow_data:
   open_webui_data:
   litellm_data:
   ollama_data:

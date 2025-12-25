@@ -8,7 +8,7 @@ A comprehensive AI lab for local development with various AI services and Model 
 
 ## 🚀 Features
 
-- **Multiple AI Services**: Langfuse, FlowiseAI, Open WebUI, and LiteLLM Proxy
+- **Multiple AI Services**: Langfuse, FlowiseAI, Langflow, Open WebUI, and LiteLLM Proxy
 - **Local LLMs with Ollama**: Run AI models locally with flexible deployment options
 - **Ollama Multi-Mode Support**: Connect to Docker, native, or remote Ollama servers
 - **Vector Store**: OpenAI-compatible vector store API with PGVector for RAG workflows
@@ -53,6 +53,7 @@ uv sync --extra dev
    - Dashboard: http://localhost:3002
    - Langfuse: http://localhost:3000
    - FlowiseAI: http://localhost:3001
+   - Langflow: http://localhost:7860
    - Open WebUI: http://localhost:8081
    - LiteLLM Proxy: http://localhost:4000
    - Vector Store API: http://localhost:8000
@@ -113,7 +114,8 @@ uv sync --extra dev
 | Service | Description | Port | Documentation |
 |---------|-------------|------|---------------|
 | **Langfuse** | LLM observability and analytics | 3000 | [docs](https://langfuse.com/) |
-| **FlowiseAI** | Visual AI workflow builder | 3001 | [docs](https://docs.flowiseai.com/) |
+| **FlowiseAI** | Visual AI workflow builder (broad focus) | 3001 | [docs](https://docs.flowiseai.com/) |
+| **Langflow** | Low-code AI agent builder (LangChain focus) | 7860 | [docs](https://docs.langflow.org/) |
 | **Open WebUI** | Chat interface for LLMs | 8080 | [docs](https://docs.openwebui.com/) |
 | **LiteLLM Proxy** | Unified API for multiple LLM providers | 4000 | [docs](https://docs.litellm.ai/) |
 | **Vector Store** | OpenAI-compatible vector store with pgvector | 8000 | [docs](docs/VECTOR_STORE.md) |
